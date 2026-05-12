@@ -5,5 +5,5 @@ import AppShell from '@/components/AppShell'
 export default async function InternalLayout({ children }: { children: React.ReactNode }) {
   const user = await getSession()
   if (!user) redirect('/login')
-  return <AppShell>{children}</AppShell>
+  return <AppShell role={user.role}>{children}</AppShell>
 }

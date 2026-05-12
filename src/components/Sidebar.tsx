@@ -42,16 +42,18 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
 
       <div className="perfil-area">
         <div className="perfil-label">Perfil ativo</div>
-        <select
-          className="form-control"
-          value={perfil}
-          onChange={e => onPerfilChange(e.target.value as Perfil)}
-        >
-          <option value="atendente">👩‍💼 Atendente / Recepção</option>
-          <option value="monitor">🔍 Monitor</option>
-          <option value="gestor">📊 Gestor / Sócio</option>
-        </select>
-        <div className="perfil-badge" style={{ marginTop: 8 }}>
+        {perfil === 'gestor' ? (
+          <select
+            className="form-control"
+            value={perfil}
+            onChange={e => onPerfilChange(e.target.value as Perfil)}
+          >
+            <option value="atendente">👩‍💼 Atendente / Recepção</option>
+            <option value="monitor">🔍 Monitor</option>
+            <option value="gestor">📊 Gestor / Sócio</option>
+          </select>
+        ) : null}
+        <div className="perfil-badge" style={{ marginTop: perfil === 'gestor' ? 8 : 0 }}>
           <div className="perfil-badge-dot" />
           <div className="perfil-badge-nome">{perfilNome[perfil]}</div>
         </div>

@@ -4,8 +4,8 @@ import { useState } from 'react'
 import Sidebar from './Sidebar'
 import type { Perfil } from '@/types'
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const [perfil, setPerfil] = useState<Perfil>('atendente')
+export default function AppShell({ children, role }: { children: React.ReactNode; role: Perfil }) {
+  const [perfil, setPerfil] = useState<Perfil>(role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (

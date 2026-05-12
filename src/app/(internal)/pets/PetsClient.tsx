@@ -8,9 +8,13 @@ interface Props {
   tutores: { id: string; nome: string }[]
 }
 
+const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio', grande: 'Grande' }
+const SEXO_LABEL: Record<string, string> = { macho: 'Macho', femea: 'Fêmea' }
+
 export default function PetsClient({ pets, tutores }: Props) {
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [detalhe, setDetalhe] = useState<Pet | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -71,7 +75,13 @@ export default function PetsClient({ pets, tutores }: Props) {
             <div className="pet-avatar">🐾</div>
             <div className="pet-info">
               <div className="pet-nome">{p.nome}</div>
-              <div className="pet-raca">{p.raca} · {p.porte} · {p.peso ? `${p.peso}kg · ` : ''}{p.sexo === 'macho' ? 'Macho' : 'Fêmea'} · {p.castrado ? 'Castrado(a)' : 'Não castrado(a)'}</div>
+              <div className="pet-raca">
+                {p.raca}
+                {p.porte ? ` · ${PORTE_LABEL[p.porte] ?? p.porte}` : ''}
+                {p.peso ? ` · ${p.peso}kg` : ''}
+                {p.sexo ? ` · ${SEXO_LABEL[p.sexo] ?? p.sexo}` : ''}
+                {` · ${p.castrado ? 'Castrado(a)' : 'Não castrado(a)'}`}
+              </div>
               <div className="pet-raca">Tutor: {p.tutor_nome}</div>
               <div className="pet-badges">
                 {p.medicamento && <span className="badge badge-med">💊 Medicamento</span>}
@@ -79,11 +89,56 @@ export default function PetsClient({ pets, tutores }: Props) {
                 {p.sexo === 'femea' && !p.castrado && <span className="badge badge-cio">🌸 Fêmea não castrada</span>}
               </div>
             </div>
-            <button className="btn btn-sm btn-ghost">Ver</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setDetalhe(p)}>Ver</button>
           </div>
         ))
       )}
 
+      {/* Modal detalhe do pet */}
+      {detalhe && (
+        <div className="modal-overlay open">
+          <div className="modal" style={{ maxWidth: 520 }}>
+            <div className="modal-header">
+              <div className="modal-title">🐾 {detalhe.nome}</div>
+              <button className="modal-close" onClick={() => setDetalhe(null)}>✕</button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, padding: '4px 0 16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <PetInfo label="Raça" value={detalhe.raca} />
+                <PetInfo label="Tutor" value={detalhe.tutor_nome ?? '—'} />
+                {detalhe.porte && <PetInfo label="Porte" value={PORTE_LABEL[detalhe.porte] ?? detalhe.porte} />}
+                {detalhe.sexo && <PetInfo label="Sexo" value={SEXO_LABEL[detalhe.sexo] ?? detalhe.sexo} />}
+                {detalhe.peso && <PetInfo label="Peso" value={`${detalhe.peso} kg`} />}
+                {detalhe.nascimento && <PetInfo label="Nascimento" value={new Date(detalhe.nascimento).toLocaleDateString('pt-BR')} />}
+                <PetInfo label="Castrado(a)" value={detalhe.castrado ? 'Sim' : 'Não'} />
+                <PetInfo label="Vacinas" value={detalhe.vacinas_ok ? '✅ Em dia' : '⚠️ Pendente'} />
+                {detalhe.pelagem && <PetInfo label="Pelagem" value={detalhe.pelagem} />}
+              </div>
+
+              {detalhe.medicamento && (
+                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginBottom: 4 }}>💊 Medicamento</div>
+                  <div style={{ fontWeight: 500 }}>{detalhe.medicamento}</div>
+                </div>
+              )}
+
+              {detalhe.observacoes && (
+                <div style={{ background: 'var(--grafite-600)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: 4 }}>Observações</div>
+                  <div style={{ fontSize: '0.9rem' }}>{detalhe.observacoes}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setDetalhe(null)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal novo pet */}
       {modalOpen && (
         <div className="modal-overlay open">
           <div className="modal modal-lg">
@@ -163,5 +218,14 @@ export default function PetsClient({ pets, tutores }: Props) {
         </div>
       )}
     </>
+  )
+}
+
+function PetInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontWeight: 500 }}>{value}</div>
+    </div>
   )
 }

@@ -59,7 +59,7 @@ export default function ModalTrocarSenha({ perfil, onClose }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-overlay open" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
         <div className="modal-header">
           <div className="modal-title">🔑 Trocar Senha</div>
