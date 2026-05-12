@@ -1,9 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+interface PetOpt {
+  id: string
+  nome: string
+  tutor_nome: string
+  porte: string | null
+}
+
+interface TabelaServico {
+  id: string
+  chave: string
+  servico: string
+  valor: number
+}
 
 interface Props {
-  pets: { id: string; nome: string; tutor_nome: string }[]
+  pets: PetOpt[]
   onClose: () => void
   onSaved: () => void
   somenteLeitura?: boolean
@@ -23,6 +37,55 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
   const [obs, setObs] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [precos, setPrecos] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    fetch('/api/servicos')
+      .then(r => r.json())
+      .then((rows: TabelaServico[]) => {
+        const map: Record<string, number> = {}
+        rows.forEach(r => { map[r.chave] = Number(r.valor) })
+        setPrecos(map)
+      })
+      .catch(() => {})
+  }, [])
+
+  // auto-calcula valor conforme serviço / plano / pet / datas
+  useEffect(() => {
+    if (!servico || !Object.keys(precos).length) return
+
+    if (servico === 'creche') {
+      const chave = `creche_${plano}`
+      let v = precos[chave] ?? 0
+      if (taxiPet) v += (precos['creche_taxi'] ?? 0)
+      setValor(v > 0 ? String(v) : '')
+      return
+    }
+
+    if (servico === 'hotel' && dataInicio && dataFim) {
+      const d1 = new Date(dataInicio)
+      const d2 = new Date(dataFim)
+      const noites = Math.max(0, Math.round((d2.getTime() - d1.getTime()) / 86400000))
+      const diaria = precos['hotel_diaria'] ?? 0
+      setValor(noites > 0 && diaria > 0 ? String(noites * diaria) : '')
+      return
+    }
+
+    if (servico === 'banho' && petId) {
+      const pet = pets.find(p => p.id === petId)
+      const porte = pet?.porte ?? 'pequeno'
+      const chave = `banho_${porte}`
+      const v = precos[chave] ?? precos['banho_pequeno'] ?? 0
+      setValor(v > 0 ? String(v) : '')
+      return
+    }
+
+    if (servico === 'transporte') {
+      const v = (precos['transporte_ida'] ?? 0)
+      setValor(v > 0 ? String(v) : '')
+      return
+    }
+  }, [servico, plano, taxiPet, petId, dataInicio, dataFim, precos, pets])
 
   async function handleSave() {
     if (!servico || !petId || !dataInicio) { setError('Preencha os campos obrigatórios'); return }
@@ -90,6 +153,14 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
             <div className="form-group">
               <label className="form-label">Valor (R$)</label>
               <input type="number" className="form-control" placeholder="0,00" value={valor} onChange={e => setValor(e.target.value)} />
+              {dataInicio && dataFim && precos['hotel_diaria'] && (() => {
+                const noites = Math.max(0, Math.round((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / 86400000))
+                return noites > 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                    {noites} noite{noites > 1 ? 's' : ''} × R$ {precos['hotel_diaria'].toFixed(2).replace('.', ',')} = R$ {(noites * precos['hotel_diaria']).toFixed(2).replace('.', ',')}
+                  </div>
+                ) : null
+              })()}
             </div>
             <div style={{ background: 'var(--grafite-600)', padding: '10px 13px', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--grafite-200)' }}>
               Sinal de 30% via PIX — CNPJ 60.910.542/0001-23
@@ -105,19 +176,19 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
               <div className="form-group">
                 <label className="form-label">Tipo de Plano</label>
                 <select className="form-control" value={plano} onChange={e => setPlano(e.target.value)}>
-                  <option value="avulso">Avulso / Day Use — R$40</option>
-                  <option value="1x">1x por semana — R$150</option>
-                  <option value="2x">2x por semana — R$300</option>
-                  <option value="3x">3x por semana — R$420</option>
-                  <option value="4x">4x por semana — R$560</option>
-                  <option value="5x">5x por semana — R$700</option>
+                  <option value="avulso">Avulso / Day Use{precos['creche_avulso'] ? ` — R$ ${precos['creche_avulso'].toFixed(2).replace('.', ',')}` : ''}</option>
+                  <option value="1x">1x por semana{precos['creche_1x'] ? ` — R$ ${precos['creche_1x'].toFixed(2).replace('.', ',')}` : ''}</option>
+                  <option value="2x">2x por semana{precos['creche_2x'] ? ` — R$ ${precos['creche_2x'].toFixed(2).replace('.', ',')}` : ''}</option>
+                  <option value="3x">3x por semana{precos['creche_3x'] ? ` — R$ ${precos['creche_3x'].toFixed(2).replace('.', ',')}` : ''}</option>
+                  <option value="4x">4x por semana{precos['creche_4x'] ? ` — R$ ${precos['creche_4x'].toFixed(2).replace('.', ',')}` : ''}</option>
+                  <option value="5x">5x por semana{precos['creche_5x'] ? ` — R$ ${precos['creche_5x'].toFixed(2).replace('.', ',')}` : ''}</option>
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Táxi Pet</label>
                 <select className="form-control" value={taxiPet ? 'sim' : 'nao'} onChange={e => setTaxiPet(e.target.value === 'sim')}>
                   <option value="nao">Não</option>
-                  <option value="sim">Sim (até 10km)</option>
+                  <option value="sim">Sim{precos['creche_taxi'] ? ` (+R$ ${precos['creche_taxi'].toFixed(2).replace('.', ',')})` : ' (até 10km)'}</option>
                 </select>
               </div>
             </div>
@@ -141,10 +212,6 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
                 <label className="form-label">Horário *</label>
                 <input type="time" className="form-control" value={hora} onChange={e => setHora(e.target.value)} />
               </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Valor (R$)</label>
-              <input type="number" className="form-control" placeholder="0,00" value={valor} onChange={e => setValor(e.target.value)} />
             </div>
           </>
         )}
@@ -171,18 +238,30 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
               <label className="form-label">Destino *</label>
               <input type="text" className="form-control" placeholder="Destino do transporte" value={destino} onChange={e => setDestino(e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label">Valor (R$)</label>
-              <input type="number" className="form-control" placeholder="0,00" value={valor} onChange={e => setValor(e.target.value)} />
-            </div>
           </>
         )}
 
         {servico && (
-          <div className="form-group" style={{ marginTop: 14 }}>
-            <label className="form-label">Observações</label>
-            <textarea className="form-control" placeholder="Informações adicionais..." value={obs} onChange={e => setObs(e.target.value)} rows={3} />
-          </div>
+          <>
+            <div className="modal-divider" />
+            <div className="form-group">
+              <label className="form-label">Valor (R$)</label>
+              <input
+                type="number"
+                className="form-control"
+                placeholder="0,00"
+                value={valor}
+                onChange={e => setValor(e.target.value)}
+              />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                Valor pré-calculado pela tabela de serviços — editável se necessário
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Observações</label>
+              <textarea className="form-control" placeholder="Informações adicionais..." value={obs} onChange={e => setObs(e.target.value)} rows={3} />
+            </div>
+          </>
         )}
 
         <div className="modal-footer">

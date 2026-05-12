@@ -88,6 +88,9 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
         <Link href="/pets" className={nav('/pets')}>
           <span className="nav-icon">🐶</span> Pets
         </Link>
+        <Link href="/servicos" className={nav('/servicos')}>
+          <span className="nav-icon">💰</span> Tabela de Serviços
+        </Link>
       </div>
 
       {perfil === 'gestor' && (

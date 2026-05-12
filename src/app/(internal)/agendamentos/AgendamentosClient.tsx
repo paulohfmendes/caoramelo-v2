@@ -7,7 +7,7 @@ import ModalAgendamento from '@/components/ModalAgendamento'
 
 interface Props {
   agendamentos: Agendamento[]
-  pets: { id: string; nome: string; tutor_nome: string }[]
+  pets: { id: string; nome: string; tutor_nome: string; porte: string | null }[]
 }
 
 const servicoBadge: Record<string, string> = {

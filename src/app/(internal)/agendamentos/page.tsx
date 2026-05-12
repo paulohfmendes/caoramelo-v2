@@ -12,8 +12,8 @@ export default async function AgendamentosPage() {
     LIMIT 100
   `).catch(() => [])
 
-  const pets = await query<{ id: string; nome: string; tutor_nome: string }>(`
-    SELECT p.id, p.nome, t.nome as tutor_nome FROM pets p JOIN tutores t ON t.id = p.tutor_id ORDER BY p.nome
+  const pets = await query<{ id: string; nome: string; tutor_nome: string; porte: string | null }>(`
+    SELECT p.id, p.nome, p.porte, t.nome as tutor_nome FROM pets p JOIN tutores t ON t.id = p.tutor_id ORDER BY p.nome
   `).catch(() => [])
 
   return <AgendamentosClient agendamentos={rows} pets={pets} />
