@@ -27,7 +27,7 @@ export default function LoginForm() {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--grafite-900)', padding: 20,
     }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
