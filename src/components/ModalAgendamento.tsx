@@ -32,7 +32,12 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ servico, pet_id: petId, data_inicio: dataInicio, data_fim: dataFim || null, hora: hora || null, plano_creche: plano, taxi_pet: taxiPet, origem, destino, valor: valor ? Number(valor) : null, observacoes: obs }),
     })
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setLoading(false); return }
+    if (!res.ok) {
+      const text = await res.text()
+      let msg = 'Erro ao salvar agendamento'
+      try { msg = JSON.parse(text).error ?? msg } catch { /* corpo não era JSON */ }
+      setError(msg); setLoading(false); return
+    }
     onSaved()
   }
 

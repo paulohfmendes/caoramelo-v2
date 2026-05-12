@@ -20,13 +20,15 @@ export interface Pet {
   tutor_nome?: string
   nome: string
   raca: string
-  porte: 'pequeno' | 'medio' | 'grande'
-  peso?: number
-  sexo: 'macho' | 'femea'
+  porte?: 'pequeno' | 'medio' | 'grande' | null
+  peso?: number | null
+  sexo?: 'macho' | 'femea' | null
   castrado: boolean
   vacinas_ok: boolean
-  medicamento?: string
-  observacoes?: string
+  nascimento?: string | null
+  pelagem?: string | null
+  medicamento?: string | null
+  observacoes?: string | null
   created_at: string
 }
 
