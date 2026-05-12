@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import type { Perfil } from '@/types'
+import ModalTrocarSenha from './ModalTrocarSenha'
 
 interface SidebarProps {
   perfil: Perfil
@@ -18,7 +20,15 @@ const perfilNome: Record<Perfil, string> = {
 
 export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps) {
   const path = usePathname()
+  const router = useRouter()
   const nav = (href: string) => path === href ? 'nav-item active' : 'nav-item'
+  const [showTrocarSenha, setShowTrocarSenha] = useState(false)
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
@@ -99,7 +109,27 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
         <div className="sidebar-footer-info">
           <strong>Campo Grande · MS</strong><br />(67) 99641-0273
         </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center', fontSize: 13 }}
+            onClick={() => setShowTrocarSenha(true)}
+          >
+            🔑 Trocar Senha
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center', fontSize: 13, color: 'var(--vermelho)' }}
+            onClick={handleLogout}
+          >
+            🚪 Sair
+          </button>
+        </div>
       </div>
+
+      {showTrocarSenha && (
+        <ModalTrocarSenha perfil={perfil} onClose={() => setShowTrocarSenha(false)} />
+      )}
     </aside>
   )
 }
