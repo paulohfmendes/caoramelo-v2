@@ -23,6 +23,18 @@ interface Props {
   somenteLeitura?: boolean
 }
 
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().split('T')[0]
+}
+
+function endOfMonth(dateStr: string): string {
+  const d = new Date(dateStr)
+  d.setMonth(d.getMonth() + 1, 0)
+  return d.toISOString().split('T')[0]
+}
+
 export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitura }: Props) {
   const [servico, setServico] = useState('')
   const [petId, setPetId] = useState('')
@@ -34,6 +46,7 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
   const [origem, setOrigem] = useState('')
   const [destino, setDestino] = useState('')
   const [valor, setValor] = useState('')
+  const [dataVencimento, setDataVencimento] = useState('')
   const [obs, setObs] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -50,7 +63,7 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
       .catch(() => {})
   }, [])
 
-  // auto-calcula valor conforme serviço / plano / pet / datas
+  // Auto-calcula valor
   useEffect(() => {
     if (!servico || !Object.keys(precos).length) return
 
@@ -61,31 +74,51 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
       setValor(v > 0 ? String(v) : '')
       return
     }
-
     if (servico === 'hotel' && dataInicio && dataFim) {
-      const d1 = new Date(dataInicio)
-      const d2 = new Date(dataFim)
-      const noites = Math.max(0, Math.round((d2.getTime() - d1.getTime()) / 86400000))
+      const noites = Math.max(0, Math.round((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / 86400000))
       const diaria = precos['hotel_diaria'] ?? 0
       setValor(noites > 0 && diaria > 0 ? String(noites * diaria) : '')
       return
     }
-
     if (servico === 'banho' && petId) {
       const pet = pets.find(p => p.id === petId)
       const porte = pet?.porte ?? 'pequeno'
-      const chave = `banho_${porte}`
-      const v = precos[chave] ?? precos['banho_pequeno'] ?? 0
+      const v = precos[`banho_${porte}`] ?? precos['banho_pequeno'] ?? 0
       setValor(v > 0 ? String(v) : '')
       return
     }
-
     if (servico === 'transporte') {
-      const v = (precos['transporte_ida'] ?? 0)
+      const v = precos['transporte_ida'] ?? 0
       setValor(v > 0 ? String(v) : '')
       return
     }
   }, [servico, plano, taxiPet, petId, dataInicio, dataFim, precos, pets])
+
+  // Auto-sugere data de vencimento
+  useEffect(() => {
+    if (!servico || !dataInicio) return
+
+    if (servico === 'hotel') {
+      // Vence no check-out
+      if (dataFim) setDataVencimento(dataFim)
+      return
+    }
+    if (servico === 'creche') {
+      if (plano === 'avulso') {
+        // Avulso: paga no dia
+        setDataVencimento(dataInicio)
+      } else {
+        // Plano mensal: vence no último dia do mês de início
+        setDataVencimento(endOfMonth(dataInicio))
+      }
+      return
+    }
+    if (servico === 'banho' || servico === 'transporte') {
+      // Paga no dia do serviço
+      setDataVencimento(dataInicio)
+      return
+    }
+  }, [servico, plano, dataInicio, dataFim])
 
   async function handleSave() {
     if (!servico || !petId || !dataInicio) { setError('Preencha os campos obrigatórios'); return }
@@ -93,16 +126,28 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
     const res = await fetch('/api/agendamentos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ servico, pet_id: petId, data_inicio: dataInicio, data_fim: dataFim || null, hora: hora || null, plano_creche: plano, taxi_pet: taxiPet, origem, destino, valor: valor ? Number(valor) : null, observacoes: obs }),
+      body: JSON.stringify({
+        servico, pet_id: petId, data_inicio: dataInicio,
+        data_fim: dataFim || null, hora: hora || null,
+        plano_creche: plano, taxi_pet: taxiPet,
+        origem, destino,
+        valor: valor ? Number(valor) : null,
+        data_vencimento: dataVencimento || null,
+        observacoes: obs,
+      }),
     })
     if (!res.ok) {
       const text = await res.text()
       let msg = 'Erro ao salvar agendamento'
-      try { msg = JSON.parse(text).error ?? msg } catch { /* corpo não era JSON */ }
+      try { msg = JSON.parse(text).error ?? msg } catch { /* não era JSON */ }
       setError(msg); setLoading(false); return
     }
     onSaved()
   }
+
+  const noitesHotel = servico === 'hotel' && dataInicio && dataFim
+    ? Math.max(0, Math.round((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / 86400000))
+    : 0
 
   return (
     <div className="modal-overlay open">
@@ -150,18 +195,11 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
                 <input type="date" className="form-control" value={dataFim} onChange={e => setDataFim(e.target.value)} />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Valor (R$)</label>
-              <input type="number" className="form-control" placeholder="0,00" value={valor} onChange={e => setValor(e.target.value)} />
-              {dataInicio && dataFim && precos['hotel_diaria'] && (() => {
-                const noites = Math.max(0, Math.round((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / 86400000))
-                return noites > 0 ? (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                    {noites} noite{noites > 1 ? 's' : ''} × R$ {precos['hotel_diaria'].toFixed(2).replace('.', ',')} = R$ {(noites * precos['hotel_diaria']).toFixed(2).replace('.', ',')}
-                  </div>
-                ) : null
-              })()}
-            </div>
+            {noitesHotel > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                {noitesHotel} noite{noitesHotel > 1 ? 's' : ''} × R$ {(precos['hotel_diaria'] ?? 0).toFixed(2).replace('.', ',')}
+              </div>
+            )}
             <div style={{ background: 'var(--grafite-600)', padding: '10px 13px', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--grafite-200)' }}>
               Sinal de 30% via PIX — CNPJ 60.910.542/0001-23
             </div>
@@ -244,17 +282,34 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
         {servico && (
           <>
             <div className="modal-divider" />
-            <div className="form-group">
-              <label className="form-label">Valor (R$)</label>
-              <input
-                type="number"
-                className="form-control"
-                placeholder="0,00"
-                value={valor}
-                onChange={e => setValor(e.target.value)}
-              />
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                Valor pré-calculado pela tabela de serviços — editável se necessário
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Valor (R$)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="0,00"
+                  value={valor}
+                  onChange={e => setValor(e.target.value)}
+                />
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                  Pré-calculado pela tabela de serviços — editável
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Vencimento</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={dataVencimento}
+                  onChange={e => setDataVencimento(e.target.value)}
+                />
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                  {servico === 'hotel' && 'Sugerido: data do check-out'}
+                  {servico === 'creche' && plano !== 'avulso' && 'Sugerido: último dia do mês'}
+                  {servico === 'creche' && plano === 'avulso' && 'Sugerido: data do serviço'}
+                  {(servico === 'banho' || servico === 'transporte') && 'Sugerido: data do serviço'}
+                </div>
               </div>
             </div>
             <div className="form-group">

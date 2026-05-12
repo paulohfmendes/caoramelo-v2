@@ -3,15 +3,25 @@
 import { useState } from 'react'
 import type { Tutor, Pet } from '@/types'
 
-interface TutorRow extends Tutor { total_pets: number }
+interface TutorRow extends Tutor {
+  total_pets: number
+  status_financeiro: 'pago' | 'em_aberto' | 'atrasado'
+}
 
 interface TutorDetalhe extends Tutor { pets: Pet[] }
 
 const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio', grande: 'Grande' }
 const SEXO_LABEL: Record<string, string> = { macho: 'Macho', femea: 'Fêmea' }
 
+const STATUS_FIN: Record<string, { label: string; bg: string; color: string }> = {
+  pago:      { label: '✅ Pago',      bg: 'rgba(16,185,129,0.15)', color: 'var(--verde)' },
+  em_aberto: { label: '🕐 Em Aberto', bg: 'rgba(245,158,11,0.15)', color: '#f59e0b' },
+  atrasado:  { label: '⚠️ Atrasado',  bg: 'rgba(239,68,68,0.15)',  color: 'var(--vermelho)' },
+}
+
 export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
   const [busca, setBusca] = useState('')
+  const [filtroFin, setFiltroFin] = useState('todos')
 
   // modal novo tutor
   const [modalOpen, setModalOpen] = useState(false)
@@ -25,11 +35,18 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
   const [detalhe, setDetalhe] = useState<TutorDetalhe | null>(null)
   const [loadingDetalhe, setLoadingDetalhe] = useState(false)
 
-  const lista = tutores.filter(t =>
-    busca === '' ||
-    t.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    t.whatsapp.includes(busca)
-  )
+  const lista = tutores.filter(t => {
+    const matchBusca = busca === '' ||
+      t.nome.toLowerCase().includes(busca.toLowerCase()) ||
+      t.whatsapp.includes(busca)
+    const matchFin = filtroFin === 'todos' || t.status_financeiro === filtroFin
+    return matchBusca && matchFin
+  })
+
+  const counts = {
+    atrasado:  tutores.filter(t => t.status_financeiro === 'atrasado').length,
+    em_aberto: tutores.filter(t => t.status_financeiro === 'em_aberto').length,
+  }
 
   async function verTutor(id: string) {
     setLoadingDetalhe(true)
@@ -63,35 +80,69 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
         </div>
       </div>
 
+      {counts.atrasado > 0 && (
+        <div style={{ marginBottom: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span>⚠️</span>
+          <span><strong>{counts.atrasado} tutor{counts.atrasado > 1 ? 'es' : ''}</strong> com pagamento atrasado</span>
+          <button className="btn btn-sm btn-ghost" style={{ marginLeft: 'auto', color: 'var(--vermelho)' }} onClick={() => setFiltroFin('atrasado')}>
+            Filtrar
+          </button>
+        </div>
+      )}
+
       <div className="card">
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="text"
             className="form-control"
             placeholder="🔍 Buscar por nome ou WhatsApp..."
-            style={{ maxWidth: 360 }}
+            style={{ maxWidth: 300, flex: 1 }}
             value={busca}
             onChange={e => setBusca(e.target.value)}
           />
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['todos', 'pago', 'em_aberto', 'atrasado'] as const).map(f => (
+              <button
+                key={f}
+                className={`btn btn-sm ${filtroFin === f ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setFiltroFin(f === filtroFin ? 'todos' : f)}
+              >
+                {f === 'todos' ? 'Todos' : STATUS_FIN[f].label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {lista.length === 0 ? (
-          <div className="empty-state"><div className="empty-icon">👥</div><p>Nenhum tutor cadastrado</p></div>
+          <div className="empty-state"><div className="empty-icon">👥</div><p>Nenhum tutor encontrado</p></div>
         ) : (
           <table className="table">
-            <thead><tr><th>Nome</th><th>WhatsApp</th><th>Endereço</th><th>Pets</th><th></th></tr></thead>
+            <thead>
+              <tr><th>Nome</th><th>WhatsApp</th><th>Pets</th><th>Status Financeiro</th><th></th></tr>
+            </thead>
             <tbody>
-              {lista.map(t => (
-                <tr key={t.id}>
-                  <td className="td-nome">{t.nome}</td>
-                  <td><a href={`https://wa.me/55${t.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--caramelo)' }}>{t.whatsapp}</a></td>
-                  <td>{t.endereco ?? '—'}</td>
-                  <td><span className="chip">🐾 {t.total_pets} pet(s)</span></td>
-                  <td>
-                    <button className="btn btn-sm btn-ghost" onClick={() => verTutor(t.id)}>Ver</button>
-                  </td>
-                </tr>
-              ))}
+              {lista.map(t => {
+                const sf = STATUS_FIN[t.status_financeiro]
+                return (
+                  <tr key={t.id}>
+                    <td className="td-nome">{t.nome}</td>
+                    <td>
+                      <a href={`https://wa.me/55${t.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--caramelo)' }}>
+                        {t.whatsapp}
+                      </a>
+                    </td>
+                    <td><span className="chip">🐾 {t.total_pets} pet(s)</span></td>
+                    <td>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: sf.bg, color: sf.color }}>
+                        {sf.label}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn btn-sm btn-ghost" onClick={() => verTutor(t.id)}>Ver</button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -112,8 +163,9 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
               <>
                 <div style={{ padding: '0 0 16px' }}>
                   <div style={{ display: 'grid', gap: 6 }}>
-                    <div><span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>WhatsApp</span><br />
-                      <a href={`https://wa.me/55${detalhe.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--caramelo)' }}>{detalhe.whatsapp}</a>
+                    <div>
+                      <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>WhatsApp</span><br />
+                      <a href={`https://wa.me/55${detalhe.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--caramelo)' }}>{detalhe.whatsapp}</a>
                     </div>
                     {detalhe.endereco && (
                       <div><span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Endereço</span><br />{detalhe.endereco}</div>
@@ -125,7 +177,6 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
                   <div style={{ fontWeight: 600, marginBottom: 10, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--caramelo)' }}>
                     🐾 Pets ({detalhe.pets.length})
                   </div>
-
                   {detalhe.pets.length === 0 ? (
                     <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Nenhum pet cadastrado.</p>
                   ) : (
@@ -145,16 +196,8 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
                             {p.peso && <span>Peso: <b style={{ color: 'var(--text)' }}>{p.peso} kg</b></span>}
                             {p.pelagem && <span>Pelagem: <b style={{ color: 'var(--text)' }}>{p.pelagem}</b></span>}
                           </div>
-                          {p.observacoes && (
-                            <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic' }}>
-                              {p.observacoes}
-                            </div>
-                          )}
-                          {p.medicamento && (
-                            <div style={{ marginTop: 4, fontSize: '0.8rem', color: '#f59e0b' }}>
-                              💊 {p.medicamento}
-                            </div>
-                          )}
+                          {p.observacoes && <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic' }}>{p.observacoes}</div>}
+                          {p.medicamento && <div style={{ marginTop: 4, fontSize: '0.8rem', color: '#f59e0b' }}>💊 {p.medicamento}</div>}
                         </div>
                       ))}
                     </div>

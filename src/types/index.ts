@@ -56,6 +56,7 @@ export interface Agendamento {
   origem?: string
   destino?: string
   valor?: number
+  data_vencimento?: string | null
   observacoes?: string
   created_at: string
 }
