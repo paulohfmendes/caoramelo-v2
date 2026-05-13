@@ -9,14 +9,49 @@ interface Inadimplente {
   valor_em_aberto: number
 }
 
+interface ContaReceber {
+  id: string
+  servico: string
+  data_inicio: string
+  data_vencimento: string | null
+  valor: number
+  pago: number
+  saldo: number
+  pet_nome: string
+  tutor_nome: string
+  whatsapp: string
+  status: string
+}
+
 interface Props {
   perfil: Perfil
   stats: { hotel: number; creche: number; banho: number; alertas: number }
   inadimplentes: Inadimplente[]
+  contasReceber: ContaReceber[]
 }
 
-export default function DashboardClient({ perfil, stats, inadimplentes }: Props) {
+const SERVICO_LABEL: Record<string, string> = {
+  hotel: '🏨 Hotel',
+  creche: '🏫 Creche',
+  banho: '🛁 Banho',
+  transporte: '🚗 Transporte',
+}
+
+function fmt(v: number) {
+  return Number(v).toFixed(2).replace('.', ',')
+}
+
+function fmtDate(s: string | null) {
+  if (!s) return '—'
+  return new Date(s).toLocaleDateString('pt-BR')
+}
+
+export default function DashboardClient({ perfil, stats, inadimplentes, contasReceber }: Props) {
   const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const totalReceber = contasReceber.reduce((s, c) => s + Number(c.saldo), 0)
+  const totalVencido = contasReceber
+    .filter(c => c.data_vencimento && new Date(c.data_vencimento) < new Date(new Date().toDateString()))
+    .reduce((s, c) => s + Number(c.saldo), 0)
 
   return (
     <>
@@ -62,6 +97,131 @@ export default function DashboardClient({ perfil, stats, inadimplentes }: Props)
           <div className="stat-desc">pets com medicamento</div>
         </div>
       </div>
+
+      {/* Contas a Receber */}
+      {contasReceber.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}>
+            {/* Cabeçalho */}
+            <div style={{
+              padding: '14px 20px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>💵</span>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Contas a Receber</span>
+              <span style={{
+                background: 'rgba(196,130,66,0.15)',
+                color: 'var(--caramelo)',
+                borderRadius: 12,
+                padding: '2px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+              }}>
+                {contasReceber.length} pendente{contasReceber.length > 1 ? 's' : ''}
+              </span>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                {totalVencido > 0 && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--vermelho)' }}>Vencido</div>
+                    <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>
+                      R$ {fmt(totalVencido)}
+                    </div>
+                  </div>
+                )}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Total a receber</div>
+                  <div style={{ fontWeight: 700, color: 'var(--caramelo)', fontSize: '1.05rem' }}>
+                    R$ {fmt(totalReceber)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela */}
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ margin: 0 }}>
+                <thead>
+                  <tr>
+                    <th>Tutor / Pet</th>
+                    <th>Serviço</th>
+                    <th>Vencimento</th>
+                    <th style={{ textAlign: 'right' }}>Valor</th>
+                    <th style={{ textAlign: 'right' }}>Pago</th>
+                    <th style={{ textAlign: 'right' }}>Saldo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contasReceber.map(c => {
+                    const vencido = c.data_vencimento
+                      ? new Date(c.data_vencimento) < new Date(new Date().toDateString())
+                      : false
+                    return (
+                      <tr key={c.id}>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.tutor_nome}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>🐾 {c.pet_nome}</div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.85rem' }}>{SERVICO_LABEL[c.servico] ?? c.servico}</span>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                            início {fmtDate(c.data_inicio)}
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            color: vencido ? 'var(--vermelho)' : 'var(--text)',
+                          }}>
+                            {vencido && '⚠️ '}
+                            {fmtDate(c.data_vencimento)}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                          R$ {fmt(c.valor)}
+                        </td>
+                        <td style={{ textAlign: 'right', color: 'var(--verde)', fontWeight: 500 }}>
+                          {Number(c.pago) > 0 ? `R$ ${fmt(c.pago)}` : '—'}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span style={{
+                            fontWeight: 700,
+                            color: vencido ? 'var(--vermelho)' : 'var(--caramelo)',
+                          }}>
+                            R$ {fmt(c.saldo)}
+                          </span>
+                        </td>
+                        <td>
+                          <a
+                            href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: 'var(--caramelo)', whiteSpace: 'nowrap' }}
+                            title="Cobrar via WhatsApp"
+                          >
+                            📱 Cobrar
+                          </a>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clientes inadimplentes */}
       {inadimplentes.length > 0 && (
@@ -120,7 +280,7 @@ export default function DashboardClient({ perfil, stats, inadimplentes }: Props)
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>
-                      R$ {Number(c.valor_em_aberto).toFixed(2).replace('.', ',')}
+                      R$ {fmt(c.valor_em_aberto)}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>em aberto</div>
                   </div>
@@ -167,6 +327,15 @@ export default function DashboardClient({ perfil, stats, inadimplentes }: Props)
             <div className="alert alert-warning">
               <span>💊</span>
               <div><strong>{stats.alertas}</strong> {stats.alertas === 1 ? 'pet precisa' : 'pets precisam'} de medicamento. Verificar na aba Pets.</div>
+            </div>
+          )}
+          {contasReceber.length > 0 && (
+            <div className="alert" style={{ marginTop: 8, background: 'rgba(196,130,66,0.1)', border: '1px solid rgba(196,130,66,0.3)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 8 }}>
+              <span>💵</span>
+              <div>
+                <strong>{contasReceber.length}</strong> pagamento{contasReceber.length > 1 ? 's' : ''} pendente{contasReceber.length > 1 ? 's' : ''} — total{' '}
+                <strong style={{ color: 'var(--caramelo)' }}>R$ {fmt(totalReceber)}</strong>
+              </div>
             </div>
           )}
           {inadimplentes.length > 0 && (
