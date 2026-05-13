@@ -1,7 +1,20 @@
+import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import TutoresClient from './TutoresClient'
 
+interface TutorRow {
+  id: string
+  nome: string
+  whatsapp: string
+  endereco?: string
+  created_at: string
+  total_pets: number
+  status_financeiro: 'pago' | 'em_aberto' | 'atrasado'
+}
+
 export default async function TutoresPage() {
+  const user = await getSession()
+
   const rows = await query(`
     SELECT
       t.*,
@@ -39,15 +52,5 @@ export default async function TutoresPage() {
     ORDER BY t.nome
   `).catch(() => [])
 
-  return <TutoresClient tutores={rows as TutorRow[]} />
-}
-
-interface TutorRow {
-  id: string
-  nome: string
-  whatsapp: string
-  endereco?: string
-  created_at: string
-  total_pets: number
-  status_financeiro: 'pago' | 'em_aberto' | 'atrasado'
+  return <TutoresClient tutores={rows as TutorRow[]} perfil={user!.role} />
 }

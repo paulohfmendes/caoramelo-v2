@@ -1,17 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import type { Pet } from '@/types'
+import type { Pet, Perfil } from '@/types'
 
 interface Props {
   pets: Pet[]
   tutores: { id: string; nome: string }[]
+  perfil: Perfil
 }
 
 const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio', grande: 'Grande' }
 const SEXO_LABEL: Record<string, string> = { macho: 'Macho', femea: 'Fêmea' }
 
-export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
+export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props) {
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [detalhe, setDetalhe] = useState<Pet | null>(null)
@@ -43,6 +44,7 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
+  const [apagandoPet, setApagandoPet] = useState(false)
 
   const lista = pets.filter(p =>
     busca === '' ||
@@ -103,6 +105,18 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
     setForm(f => ({ ...f, tutor_id: novo.id }))
     fecharNovoTutor()
     setNtSaving(false)
+  }
+
+  async function apagarPet() {
+    if (!detalhe) return
+    if (!confirm(`Apagar pet "${detalhe.nome}" e todos os seus agendamentos? Esta ação não pode ser desfeita.`)) return
+    setApagandoPet(true)
+    const res = await fetch(`/api/pets/${detalhe.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setDetalhe(null)
+      window.location.reload()
+    }
+    setApagandoPet(false)
   }
 
   async function salvarEdicao() {
@@ -191,7 +205,20 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
                 {p.sexo === 'femea' && !p.castrado && <span className="badge badge-cio">🌸 Fêmea não castrada</span>}
               </div>
             </div>
-            <button className="btn btn-sm btn-ghost" onClick={() => { setDetalhe(p); setEditando(false) }}>Ver</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-sm btn-ghost" onClick={() => { setDetalhe(p); setEditando(false) }}>Ver</button>
+              {perfil === 'gestor' && (
+                <button className="btn btn-sm btn-ghost" style={{ color: 'var(--vermelho)' }}
+                  title="Apagar pet definitivamente"
+                  onClick={async () => {
+                    if (!confirm(`Apagar pet "${p.nome}" e todos os seus agendamentos?`)) return
+                    await fetch(`/api/pets/${p.id}`, { method: 'DELETE' })
+                    window.location.reload()
+                  }}>
+                  🗑️
+                </button>
+              )}
+            </div>
           </div>
         ))
       )}
@@ -230,6 +257,12 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
               )}
             </div>
             <div className="modal-footer">
+              {perfil === 'gestor' && (
+                <button className="btn btn-ghost" style={{ color: 'var(--vermelho)' }}
+                  disabled={apagandoPet} onClick={apagarPet}>
+                  {apagandoPet ? 'Apagando...' : '🗑️ Apagar'}
+                </button>
+              )}
               <button className="btn btn-ghost" onClick={() => setDetalhe(null)}>Fechar</button>
               <button className="btn btn-secondary" onClick={iniciarEdicao}>✏️ Editar</button>
             </div>

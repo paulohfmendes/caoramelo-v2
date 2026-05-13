@@ -22,6 +22,7 @@ export default function ServicosClient({ servicos: inicial, isGestor }: { servic
   const [servicos, setServicos] = useState(inicial)
   const [editando, setEditando] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
+  const [apagando, setApagando] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -60,6 +61,22 @@ export default function ServicosClient({ servicos: inicial, isGestor }: { servic
     return editando[s.id] !== undefined ? editando[s.id] : String(s.valor)
   }
 
+  async function apagarServico(s: TabelaServico) {
+    if (!confirm(`Apagar "${s.nome}" da tabela de serviços? Esta ação não pode ser desfeita.`)) return
+    setApagando(s.id)
+    setError('')
+    const res = await fetch(`/api/servicos/${s.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setServicos(prev => prev.filter(x => x.id !== s.id))
+      setSuccess(`"${s.nome}" removido da tabela.`)
+      setTimeout(() => setSuccess(''), 3000)
+    } else {
+      const d = await res.json().catch(() => ({}))
+      setError(d.error ?? 'Erro ao apagar')
+    }
+    setApagando(null)
+  }
+
   return (
     <>
       <div className="page-header">
@@ -91,7 +108,7 @@ export default function ServicosClient({ servicos: inicial, isGestor }: { servic
                 <tr>
                   <th>Serviço</th>
                   <th style={{ width: 160 }}>Valor (R$)</th>
-                  {isGestor && <th style={{ width: 80 }}></th>}
+                  {isGestor && <th style={{ width: 110 }}></th>}
                 </tr>
               </thead>
               <tbody>
@@ -119,7 +136,7 @@ export default function ServicosClient({ servicos: inicial, isGestor }: { servic
                         )}
                       </td>
                       {isGestor && (
-                        <td>
+                        <td style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           {dirty && (
                             <button
                               className="btn btn-sm btn-primary"
@@ -129,6 +146,15 @@ export default function ServicosClient({ servicos: inicial, isGestor }: { servic
                               {saving === s.id ? '...' : '💾'}
                             </button>
                           )}
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: 'var(--vermelho)' }}
+                            title="Apagar este serviço"
+                            onClick={() => apagarServico(s)}
+                            disabled={apagando === s.id}
+                          >
+                            {apagando === s.id ? '...' : '🗑️'}
+                          </button>
                         </td>
                       )}
                     </tr>

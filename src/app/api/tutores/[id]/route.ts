@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query, queryOne } from '@/lib/db'
 import { requireSession } from '@/lib/auth'
 
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const user = await requireSession()
+    if (user.role !== 'gestor') return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    // cascata: pagamentos → agendamentos → pets → tutor
+    await query(`
+      DELETE FROM pagamentos WHERE agendamento_id IN (
+        SELECT a.id FROM agendamentos a JOIN pets p ON p.id = a.pet_id WHERE p.tutor_id = $1
+      )
+    `, [params.id])
+    await query(`DELETE FROM agendamentos WHERE pet_id IN (SELECT id FROM pets WHERE tutor_id = $1)`, [params.id])
+    await query(`DELETE FROM pets WHERE tutor_id = $1`, [params.id])
+    const row = await queryOne(`DELETE FROM tutores WHERE id = $1 RETURNING id`, [params.id])
+    if (!row) return NextResponse.json({ error: 'Tutor não encontrado' }, { status: 404 })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro interno'
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   await requireSession()
   const tutor = await queryOne(`SELECT * FROM tutores WHERE id = $1`, [params.id])

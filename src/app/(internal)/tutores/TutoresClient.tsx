@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Tutor, Pet } from '@/types'
+import type { Tutor, Pet, Perfil } from '@/types'
 
 interface TutorRow extends Tutor {
   total_pets: number
@@ -19,7 +19,7 @@ const STATUS_FIN: Record<string, { label: string; bg: string; color: string }> =
   atrasado:  { label: '⚠️ Atrasado',  bg: 'rgba(239,68,68,0.15)',  color: 'var(--vermelho)' },
 }
 
-export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
+export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]; perfil: Perfil }) {
   const [busca, setBusca] = useState('')
   const [filtroFin, setFiltroFin] = useState('todos')
 
@@ -40,6 +40,7 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
   const [editForm, setEditForm] = useState({ nome: '', whatsapp: '', endereco: '' })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
+  const [apagando, setApagando] = useState(false)
 
   const lista = tutores.filter(t => {
     const matchBusca = busca === '' ||
@@ -89,6 +90,18 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
     setEditSaving(false)
     setEditando(false)
     window.location.reload()
+  }
+
+  async function apagarTutor() {
+    if (!detalhe) return
+    if (!confirm(`Apagar tutor "${detalhe.nome}" e todos os seus pets e agendamentos? Esta ação não pode ser desfeita.`)) return
+    setApagando(true)
+    const res = await fetch(`/api/tutores/${detalhe.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setDetalhe(null)
+      window.location.reload()
+    }
+    setApagando(false)
   }
 
   async function salvar() {
@@ -172,8 +185,19 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
                         {sf.label}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <button className="btn btn-sm btn-ghost" onClick={() => verTutor(t.id)}>Ver</button>
+                      {perfil === 'gestor' && (
+                        <button className="btn btn-sm btn-ghost" style={{ color: 'var(--vermelho)' }}
+                          title="Apagar tutor definitivamente"
+                          onClick={async () => {
+                            if (!confirm(`Apagar tutor "${t.nome}" e todos os seus pets e agendamentos?`)) return
+                            await fetch(`/api/tutores/${t.id}`, { method: 'DELETE' })
+                            window.location.reload()
+                          }}>
+                          🗑️
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -240,6 +264,12 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
                 </div>
 
                 <div className="modal-footer">
+                  {perfil === 'gestor' && (
+                    <button className="btn btn-ghost" style={{ color: 'var(--vermelho)' }}
+                      disabled={apagando} onClick={apagarTutor}>
+                      {apagando ? 'Apagando...' : '🗑️ Apagar'}
+                    </button>
+                  )}
                   <button className="btn btn-ghost" onClick={() => { setDetalhe(null); setEditando(false) }}>Fechar</button>
                   <button className="btn btn-secondary" onClick={iniciarEdicao}>✏️ Editar</button>
                 </div>
