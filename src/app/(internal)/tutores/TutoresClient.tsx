@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Tutor, Pet, Perfil } from '@/types'
 
 interface TutorRow extends Tutor {
@@ -20,6 +21,7 @@ const STATUS_FIN: Record<string, { label: string; bg: string; color: string }> =
 }
 
 export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]; perfil: Perfil }) {
+  const router = useRouter()
   const [busca, setBusca] = useState('')
   const [filtroFin, setFiltroFin] = useState('todos')
 
@@ -89,7 +91,7 @@ export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]
     }
     setEditSaving(false)
     setEditando(false)
-    window.location.reload()
+    router.refresh()
   }
 
   async function apagarTutor() {
@@ -99,7 +101,7 @@ export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]
     const res = await fetch(`/api/tutores/${detalhe.id}`, { method: 'DELETE' })
     if (res.ok) {
       setDetalhe(null)
-      window.location.reload()
+      router.refresh()
     }
     setApagando(false)
   }
@@ -113,7 +115,7 @@ export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]
       body: JSON.stringify({ nome, whatsapp, endereco }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
-    window.location.reload()
+    router.refresh()
   }
 
   return (
@@ -193,7 +195,7 @@ export default function TutoresClient({ tutores, perfil }: { tutores: TutorRow[]
                           onClick={async () => {
                             if (!confirm(`Apagar tutor "${t.nome}" e todos os seus pets e agendamentos?`)) return
                             await fetch(`/api/tutores/${t.id}`, { method: 'DELETE' })
-                            window.location.reload()
+                            router.refresh()
                           }}>
                           🗑️
                         </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Pagamento } from '@/types'
 import { formatCurrency, formatDate, servicoLabel } from '@/lib/utils'
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function FinanceiroClient({ pagamentos, stats }: Props) {
+  const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
   const [agId, setAgId] = useState('')
   const [valor, setValor] = useState('')
@@ -26,7 +28,7 @@ export default function FinanceiroClient({ pagamentos, stats }: Props) {
     })
     setSaving(false)
     setModalOpen(false)
-    window.location.reload()
+    router.refresh()
   }
 
   return (

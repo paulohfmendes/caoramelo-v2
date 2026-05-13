@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query, queryOne } from '@/lib/db'
 import { requireSession } from '@/lib/auth'
+import { TutorUpdateSchema, parseBody } from '@/lib/validation'
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await requireSession()
     if (user.role !== 'gestor') return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-    // cascata: pagamentos → agendamentos → pets → tutor
+    // cascata: pagamentos → agendamentos → pets → tutor (FKs com CASCADE, mas feito explicitamente para clareza)
     await query(`
       DELETE FROM pagamentos WHERE agendamento_id IN (
         SELECT a.id FROM agendamentos a JOIN pets p ON p.id = a.pet_id WHERE p.tutor_id = $1
@@ -33,8 +34,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   await requireSession()
-  const { nome, whatsapp, endereco } = await req.json()
-  if (!nome || !whatsapp) return NextResponse.json({ error: 'Nome e WhatsApp são obrigatórios' }, { status: 400 })
+
+  const body = await req.json().catch(() => null)
+  const parsed = parseBody(TutorUpdateSchema, body)
+  if ('error' in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status })
+  }
+
+  const { nome, whatsapp, endereco } = parsed.data
   const row = await queryOne(
     `UPDATE tutores SET nome=$1, whatsapp=$2, endereco=$3 WHERE id=$4 RETURNING *`,
     [nome, whatsapp, endereco ?? null, params.id]

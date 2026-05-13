@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query, queryOne } from '@/lib/db'
 import { requireSession } from '@/lib/auth'
-
-const STATUS_VALIDOS = ['agendado', 'ativo', 'concluido', 'cancelado']
+import { AgendamentoPatchSchema, AgendamentoUpdateSchema, parseBody } from '@/lib/validation'
 
 // PATCH — atualiza somente o status (cancelar, etc.)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireSession()
-    const { status } = await req.json()
-    if (!STATUS_VALIDOS.includes(status)) {
-      return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
+
+    const body = await req.json().catch(() => null)
+    const parsed = parseBody(AgendamentoPatchSchema, body)
+    if ('error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status })
     }
+
     const row = await queryOne(
-      `UPDATE agendamentos SET status = $1 WHERE id = $2 RETURNING *`,
-      [status, params.id]
+      `UPDATE agendamentos SET status = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`,
+      [parsed.data.status, params.id]
     )
     if (!row) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
     return NextResponse.json(row)
@@ -28,17 +30,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireSession()
-    const { valor, data_vencimento, status, observacoes, dias_semana } = await req.json()
-    if (status && !STATUS_VALIDOS.includes(status)) {
-      return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
+
+    const body = await req.json().catch(() => null)
+    const parsed = parseBody(AgendamentoUpdateSchema, body)
+    if ('error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status })
     }
+
+    const { valor, data_vencimento, status, observacoes, dias_semana } = parsed.data
+
     const row = await queryOne(
       `UPDATE agendamentos
        SET valor = $1, data_vencimento = $2, status = $3,
            observacoes = $4, dias_semana = $5
-       WHERE id = $6 RETURNING *`,
-      [valor != null ? Number(valor) : null, data_vencimento || null,
-       status, observacoes || null, dias_semana || null, params.id]
+       WHERE id = $6 AND deleted_at IS NULL RETURNING *`,
+      [
+        valor != null ? Number(valor) : null,
+        data_vencimento ?? null,
+        status,
+        observacoes ?? null,
+        dias_semana ?? null,
+        params.id,
+      ]
     )
     if (!row) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
     return NextResponse.json(row)
@@ -48,16 +61,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-// DELETE — remove registro (somente gestor)
+// DELETE — soft delete (somente gestor)
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await requireSession()
     if (user.role !== 'gestor') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
-    // remove pagamentos vinculados primeiro (FK)
-    await query(`DELETE FROM pagamentos WHERE agendamento_id = $1`, [params.id])
-    const row = await queryOne(`DELETE FROM agendamentos WHERE id = $1 RETURNING id`, [params.id])
+    const row = await queryOne(
+      `UPDATE agendamentos SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+      [params.id]
+    )
     if (!row) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
     return NextResponse.json({ ok: true })
   } catch (err) {
@@ -74,11 +88,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
      FROM agendamentos a
      JOIN pets p ON p.id = a.pet_id
      JOIN tutores t ON t.id = p.tutor_id
-     WHERE a.id = $1`, [params.id]
+     WHERE a.id = $1 AND a.deleted_at IS NULL`,
+    [params.id]
   )
   if (!ag) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   const pagamentos = await query(
-    `SELECT * FROM pagamentos WHERE agendamento_id = $1 ORDER BY data`, [params.id]
+    `SELECT * FROM pagamentos WHERE agendamento_id = $1 ORDER BY data`,
+    [params.id]
   )
   return NextResponse.json({ ...ag, pagamentos })
 }
