@@ -3,10 +3,12 @@ import type { Agendamento } from '@/types'
 import BanhoTosaClient from './BanhoTosaClient'
 
 export default async function BanhoTosaPage() {
-  const rows = await query<Agendamento>(`
-    SELECT a.*, p.nome as pet_nome, p.porte, p.raca
+  const rows = await query<Agendamento & { raca?: string; porte?: string; whatsapp?: string }>(`
+    SELECT a.*, p.nome as pet_nome, p.porte, p.raca,
+           t.nome as tutor_nome, t.whatsapp
     FROM agendamentos a
     JOIN pets p ON p.id = a.pet_id
+    JOIN tutores t ON t.id = p.tutor_id
     WHERE a.servico = 'banho' AND DATE(a.data_inicio) = CURRENT_DATE
     ORDER BY a.hora ASC NULLS LAST
   `).catch(() => [])

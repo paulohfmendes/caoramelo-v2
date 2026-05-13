@@ -38,7 +38,7 @@ export type AgendamentoStatus =
   | 'agendado' | 'ativo' | 'concluido' | 'cancelado'
 
 export type BanhoStatus =
-  | 'agendado' | 'chegou' | 'em_banho' | 'em_tosa' | 'pronto' | 'retirado'
+  | 'agendado' | 'chegou' | 'em_atendimento' | 'pronto'
 
 export interface Agendamento {
   id: string

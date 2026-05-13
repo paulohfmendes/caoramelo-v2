@@ -24,10 +24,8 @@ export function banhoStatusLabel(status: string): string {
   const map: Record<string, string> = {
     agendado: 'Agendado',
     chegou: 'Chegou',
-    em_banho: 'Em Banho',
-    em_tosa: 'Em Tosa',
-    pronto: 'Pronto',
-    retirado: 'Retirado',
+    em_atendimento: 'Em Atendimento',
+    pronto: '✅ Pronto',
   }
   return map[status] ?? status
 }
