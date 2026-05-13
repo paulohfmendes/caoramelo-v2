@@ -72,6 +72,7 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
         )}
       </div>
 
+      {/* Cards de estatísticas */}
       <div className="grid-4" style={{ marginBottom: 20 }}>
         <div className="stat-card caramelo">
           <div className="stat-icon">🏨</div>
@@ -99,204 +100,159 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
         </div>
       </div>
 
-      {/* Contas a Receber */}
-      {contasReceber.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '14px 20px',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}>
-              <span style={{ fontSize: '1.1rem' }}>💵</span>
-              <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Contas a Receber</span>
-              <span style={{
-                background: 'rgba(196,130,66,0.15)',
-                color: 'var(--caramelo)',
-                borderRadius: 12,
-                padding: '2px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-              }}>
-                {contasReceber.length} pendente{contasReceber.length > 1 ? 's' : ''}
-              </span>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                {totalVencido > 0 && (
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--vermelho)' }}>Vencido</div>
-                    <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>
-                      R$ {fmt(totalVencido)}
-                    </div>
-                  </div>
-                )}
+      {/* Contas a Receber — sempre visível */}
+      <div style={{ marginBottom: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+        {/* cabeçalho */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '1.1rem' }}>💵</span>
+          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Contas a Receber</span>
+          <span style={{ background: 'rgba(196,130,66,0.15)', color: 'var(--caramelo)', borderRadius: 12, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>
+            {contasReceber.length} pendente{contasReceber.length !== 1 ? 's' : ''}
+          </span>
+          {contasReceber.length > 0 && (
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+              {totalVencido > 0 && (
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Total a receber</div>
-                  <div style={{ fontWeight: 700, color: 'var(--caramelo)', fontSize: '1.05rem' }}>
-                    R$ {fmt(totalReceber)}
-                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--vermelho)' }}>Vencido</div>
+                  <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>R$ {fmt(totalVencido)}</div>
                 </div>
+              )}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Total a receber</div>
+                <div style={{ fontWeight: 700, color: 'var(--caramelo)', fontSize: '1.05rem' }}>R$ {fmt(totalReceber)}</div>
               </div>
             </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table" style={{ margin: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Tutor / Pet</th>
-                    <th>Serviço</th>
-                    <th>Vencimento</th>
-                    <th style={{ textAlign: 'right' }}>Valor</th>
-                    <th style={{ textAlign: 'right' }}>Pago</th>
-                    <th style={{ textAlign: 'right' }}>Saldo</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contasReceber.map(c => {
-                    const vencido = c.data_vencimento
-                      ? new Date(c.data_vencimento) < new Date(new Date().toDateString())
-                      : false
-                    return (
-                      <tr key={c.id}>
-                        <td>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.tutor_nome}</div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>🐾 {c.pet_nome}</div>
-                        </td>
-                        <td>
-                          <span style={{ fontSize: '0.85rem' }}>{SERVICO_LABEL[c.servico] ?? c.servico}</span>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                            início {fmtDate(c.data_inicio)}
-                          </div>
-                        </td>
-                        <td>
-                          <span style={{
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            color: vencido ? 'var(--vermelho)' : 'var(--text)',
-                          }}>
-                            {vencido && '⚠️ '}
-                            {fmtDate(c.data_vencimento)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                          R$ {fmt(c.valor)}
-                        </td>
-                        <td style={{ textAlign: 'right', color: 'var(--verde)', fontWeight: 500 }}>
-                          {Number(c.pago) > 0 ? `R$ ${fmt(c.pago)}` : '—'}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <span style={{
-                            fontWeight: 700,
-                            color: vencido ? 'var(--vermelho)' : 'var(--caramelo)',
-                          }}>
-                            R$ {fmt(c.saldo)}
-                          </span>
-                        </td>
-                        <td>
-                          <a
-                            href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-sm btn-ghost"
-                            style={{ color: 'var(--caramelo)', whiteSpace: 'nowrap' }}
-                            title="Cobrar via WhatsApp"
-                          >
-                            📱 Cobrar
-                          </a>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Clientes inadimplentes */}
-      {inadimplentes.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.25)',
-            borderRadius: 10,
-            overflow: 'hidden',
+        {/* corpo */}
+        {contasReceber.length === 0 ? (
+          <div style={{ padding: '22px', textAlign: 'center', color: 'var(--verde)', fontSize: '0.88rem' }}>
+            ✅ Nenhum pagamento pendente
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ margin: 0 }}>
+              <thead>
+                <tr>
+                  <th>Tutor / Pet</th>
+                  <th>Serviço</th>
+                  <th>Vencimento</th>
+                  <th style={{ textAlign: 'right' }}>Valor</th>
+                  <th style={{ textAlign: 'right' }}>Pago</th>
+                  <th style={{ textAlign: 'right' }}>Saldo</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {contasReceber.map(c => {
+                  const vencido = c.data_vencimento
+                    ? new Date(c.data_vencimento) < new Date(new Date().toDateString())
+                    : false
+                  return (
+                    <tr key={c.id}>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.tutor_nome}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>🐾 {c.pet_nome}</div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.85rem' }}>{SERVICO_LABEL[c.servico] ?? c.servico}</span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>início {fmtDate(c.data_inicio)}</div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem', color: vencido ? 'var(--vermelho)' : 'var(--text)' }}>
+                          {vencido && '⚠️ '}{fmtDate(c.data_vencimento)}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>R$ {fmt(c.valor)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--verde)', fontWeight: 500 }}>
+                        {Number(c.pago) > 0 ? `R$ ${fmt(c.pago)}` : '—'}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span style={{ fontWeight: 700, color: vencido ? 'var(--vermelho)' : 'var(--caramelo)' }}>
+                          R$ {fmt(c.saldo)}
+                        </span>
+                      </td>
+                      <td>
+                        <a
+                          href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-sm btn-ghost"
+                          style={{ color: 'var(--caramelo)', whiteSpace: 'nowrap' }}
+                          title="Cobrar via WhatsApp"
+                        >
+                          📱 Cobrar
+                        </a>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Inadimplentes — sempre visível */}
+      <div style={{ marginBottom: 20, borderRadius: 10, overflow: 'hidden', border: inadimplentes.length > 0 ? '1px solid rgba(239,68,68,0.25)' : '1px solid var(--border)', background: inadimplentes.length > 0 ? 'rgba(239,68,68,0.08)' : 'var(--surface)' }}>
+        {/* cabeçalho */}
+        <div style={{
+          padding: '12px 18px',
+          borderBottom: inadimplentes.length > 0 ? '1px solid rgba(239,68,68,0.2)' : '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: inadimplentes.length > 0 ? 'rgba(239,68,68,0.12)' : 'transparent',
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+          <span style={{ fontWeight: 700, color: inadimplentes.length > 0 ? 'var(--vermelho)' : 'var(--text)', fontSize: '0.95rem' }}>
+            Clientes com Pagamento em Atraso
+          </span>
+          <span style={{
+            marginLeft: 'auto',
+            background: inadimplentes.length > 0 ? 'var(--vermelho)' : 'var(--border)',
+            color: inadimplentes.length > 0 ? '#fff' : 'var(--muted)',
+            borderRadius: 12,
+            padding: '2px 10px',
+            fontSize: 12,
+            fontWeight: 700,
           }}>
-            <div style={{
-              padding: '12px 18px',
-              borderBottom: '1px solid rgba(239,68,68,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              background: 'rgba(239,68,68,0.12)',
-            }}>
-              <span style={{ fontSize: '1.1rem' }}>⚠️</span>
-              <span style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>
-                Clientes com Pagamento em Atraso
-              </span>
-              <span style={{
-                marginLeft: 'auto',
-                background: 'var(--vermelho)',
-                color: '#fff',
-                borderRadius: 12,
-                padding: '2px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-              }}>
-                {inadimplentes.length}
-              </span>
-            </div>
-            <div style={{ padding: '6px 0' }}>
-              {inadimplentes.map(c => (
-                <div key={c.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '10px 18px',
-                  borderBottom: '1px solid rgba(239,68,68,0.1)',
-                  gap: 14,
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{c.nome}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
-                      <a
-                        href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ color: 'var(--caramelo)' }}
-                      >
-                        📱 {c.whatsapp}
-                      </a>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>
-                      R$ {fmt(c.valor_em_aberto)}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>em aberto</div>
-                  </div>
-                  <Link
-                    href="/tutores"
-                    className="btn btn-sm btn-ghost"
-                    style={{ color: 'var(--vermelho)', borderColor: 'rgba(239,68,68,0.3)', whiteSpace: 'nowrap' }}
-                  >
-                    Ver tutor →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
+            {inadimplentes.length}
+          </span>
         </div>
-      )}
 
+        {/* corpo */}
+        {inadimplentes.length === 0 ? (
+          <div style={{ padding: '22px', textAlign: 'center', color: 'var(--verde)', fontSize: '0.88rem' }}>
+            ✅ Nenhum cliente em atraso
+          </div>
+        ) : (
+          <div style={{ padding: '6px 0' }}>
+            {inadimplentes.map(c => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 18px', borderBottom: '1px solid rgba(239,68,68,0.1)', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{c.nome}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                    <a href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--caramelo)' }}>
+                      📱 {c.whatsapp}
+                    </a>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--vermelho)', fontSize: '0.95rem' }}>R$ {fmt(c.valor_em_aberto)}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>em aberto</div>
+                </div>
+                <Link href="/tutores" className="btn btn-sm btn-ghost" style={{ color: 'var(--vermelho)', borderColor: 'rgba(239,68,68,0.3)', whiteSpace: 'nowrap' }}>
+                  Ver tutor →
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grid inferior */}
       <div className="grid-2">
         <div className="card">
           <div className="card-title"><span className="card-title-icon">📅</span> Acesso Rápido</div>
