@@ -11,7 +11,7 @@ interface Props {
 const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio', grande: 'Grande' }
 const SEXO_LABEL: Record<string, string> = { macho: 'Macho', femea: 'Fêmea' }
 
-export default function PetsClient({ pets, tutores }: Props) {
+export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [detalhe, setDetalhe] = useState<Pet | null>(null)
@@ -23,6 +23,17 @@ export default function PetsClient({ pets, tutores }: Props) {
     medicamento: '', observacoes: '',
   })
 
+  // lista local de tutores — cresce quando um novo é criado inline
+  const [tutores, setTutores] = useState(tutoresInit)
+
+  // mini-form de novo tutor inline
+  const [novoTutorOpen, setNovoTutorOpen] = useState(false)
+  const [ntNome, setNtNome] = useState('')
+  const [ntWpp, setNtWpp] = useState('')
+  const [ntEndereco, setNtEndereco] = useState('')
+  const [ntSaving, setNtSaving] = useState(false)
+  const [ntError, setNtError] = useState('')
+
   const lista = pets.filter(p =>
     busca === '' ||
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -31,6 +42,39 @@ export default function PetsClient({ pets, tutores }: Props) {
   )
 
   function set(k: string, v: unknown) { setForm(f => ({ ...f, [k]: v })) }
+
+  function abrirNovoTutor() {
+    setNtNome(''); setNtWpp(''); setNtEndereco(''); setNtError('')
+    setNovoTutorOpen(true)
+  }
+
+  function fecharNovoTutor() {
+    setNovoTutorOpen(false)
+    setNtNome(''); setNtWpp(''); setNtEndereco(''); setNtError('')
+  }
+
+  async function salvarTutor() {
+    if (!ntNome || !ntWpp) { setNtError('Nome e WhatsApp são obrigatórios'); return }
+    setNtSaving(true)
+    setNtError('')
+    const res = await fetch('/api/tutores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: ntNome, whatsapp: ntWpp, endereco: ntEndereco }),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      setNtError(d.error ?? 'Erro ao criar tutor')
+      setNtSaving(false)
+      return
+    }
+    const novo: { id: string; nome: string } = await res.json()
+    // adiciona na lista local e seleciona automaticamente
+    setTutores(prev => [...prev, { id: novo.id, nome: novo.nome }].sort((a, b) => a.nome.localeCompare(b.nome)))
+    setForm(f => ({ ...f, tutor_id: novo.id }))
+    fecharNovoTutor()
+    setNtSaving(false)
+  }
 
   async function salvar() {
     if (!form.tutor_id || !form.nome || !form.raca) { setError('Preencha os campos obrigatórios'); return }
@@ -102,7 +146,6 @@ export default function PetsClient({ pets, tutores }: Props) {
               <div className="modal-title">🐾 {detalhe.nome}</div>
               <button className="modal-close" onClick={() => setDetalhe(null)}>✕</button>
             </div>
-
             <div style={{ display: 'grid', gap: 12, padding: '4px 0 16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <PetInfo label="Raça" value={detalhe.raca} />
@@ -115,14 +158,12 @@ export default function PetsClient({ pets, tutores }: Props) {
                 <PetInfo label="Vacinas" value={detalhe.vacinas_ok ? '✅ Em dia' : '⚠️ Pendente'} />
                 {detalhe.pelagem && <PetInfo label="Pelagem" value={detalhe.pelagem} />}
               </div>
-
               {detalhe.medicamento && (
                 <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginBottom: 4 }}>💊 Medicamento</div>
                   <div style={{ fontWeight: 500 }}>{detalhe.medicamento}</div>
                 </div>
               )}
-
               {detalhe.observacoes && (
                 <div style={{ background: 'var(--grafite-600)', borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: 4 }}>Observações</div>
@@ -130,7 +171,6 @@ export default function PetsClient({ pets, tutores }: Props) {
                 </div>
               )}
             </div>
-
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setDetalhe(null)}>Fechar</button>
             </div>
@@ -144,17 +184,110 @@ export default function PetsClient({ pets, tutores }: Props) {
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">🐶 Novo Pet</div>
-              <button className="modal-close" onClick={() => setModalOpen(false)}>✕</button>
+              <button className="modal-close" onClick={() => { setModalOpen(false); fecharNovoTutor() }}>✕</button>
             </div>
             {error && <div className="alert alert-danger"><span>⚠️</span>{error}</div>}
 
+            {/* Campo tutor com link de cadastro */}
             <div className="form-group">
-              <label className="form-label">Tutor *</label>
-              <select className="form-control" value={form.tutor_id} onChange={e => set('tutor_id', e.target.value)}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Tutor *</label>
+                {!novoTutorOpen && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    style={{ fontSize: 12, color: 'var(--caramelo)', padding: '2px 8px' }}
+                    onClick={abrirNovoTutor}
+                  >
+                    + Cadastrar novo tutor
+                  </button>
+                )}
+              </div>
+              <select
+                className="form-control"
+                value={form.tutor_id}
+                onChange={e => set('tutor_id', e.target.value)}
+              >
                 <option value="">Selecionar tutor...</option>
                 {tutores.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
               </select>
             </div>
+
+            {/* Painel inline de novo tutor */}
+            {novoTutorOpen && (
+              <div style={{
+                background: 'var(--grafite-600)',
+                border: '1px solid var(--caramelo)',
+                borderRadius: 8,
+                padding: '14px 16px',
+                marginBottom: 16,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--caramelo)' }}>
+                    👥 Novo Tutor
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    style={{ padding: '2px 8px', fontSize: 12 }}
+                    onClick={fecharNovoTutor}
+                  >
+                    ✕ Cancelar
+                  </button>
+                </div>
+
+                {ntError && (
+                  <div className="alert alert-danger" style={{ marginBottom: 10, padding: '6px 10px', fontSize: 13 }}>
+                    <span>⚠️</span>{ntError}
+                  </div>
+                )}
+
+                <div className="form-row">
+                  <div className="form-group" style={{ marginBottom: 8 }}>
+                    <label className="form-label" style={{ fontSize: 12 }}>Nome completo *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Nome do tutor"
+                      value={ntNome}
+                      onChange={e => setNtNome(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 8 }}>
+                    <label className="form-label" style={{ fontSize: 12 }}>WhatsApp *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="(67) 99999-9999"
+                      value={ntWpp}
+                      onChange={e => setNtWpp(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 10 }}>
+                  <label className="form-label" style={{ fontSize: 12 }}>Endereço</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Rua, número, bairro (opcional)"
+                    value={ntEndereco}
+                    onChange={e => setNtEndereco(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={salvarTutor}
+                  disabled={ntSaving}
+                >
+                  {ntSaving ? 'Salvando...' : '💾 Criar tutor e selecionar'}
+                </button>
+              </div>
+            )}
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Nome do pet *</label>
@@ -211,8 +344,8 @@ export default function PetsClient({ pets, tutores }: Props) {
               <textarea className="form-control" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} rows={3} placeholder="Comportamento, restrições, alergias..." />
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={salvar} disabled={saving}>{saving ? 'Salvando...' : '💾 Salvar'}</button>
+              <button className="btn btn-ghost" onClick={() => { setModalOpen(false); fecharNovoTutor() }}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvar} disabled={saving}>{saving ? 'Salvando...' : '💾 Salvar Pet'}</button>
             </div>
           </div>
         </div>
