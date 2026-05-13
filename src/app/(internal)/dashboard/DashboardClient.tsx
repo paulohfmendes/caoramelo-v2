@@ -100,7 +100,10 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
         </div>
       </div>
 
-      {/* Contas a Receber — sempre visível */}
+      {/* Contas a Receber e Inadimplentes — apenas gestor e atendente */}
+      {perfil !== 'monitor' && (
+      <>
+      {/* Contas a Receber */}
       <div style={{ marginBottom: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
         {/* cabeçalho */}
         <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -251,6 +254,7 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
           </div>
         )}
       </div>
+      </> )}
 
       {/* Grid inferior */}
       <div className="grid-2">
@@ -284,7 +288,7 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
               <div><strong>{stats.alertas}</strong> {stats.alertas === 1 ? 'pet precisa' : 'pets precisam'} de medicamento. Verificar na aba Pets.</div>
             </div>
           )}
-          {contasReceber.length > 0 && (
+          {perfil !== 'monitor' && contasReceber.length > 0 && (
             <div className="alert" style={{ marginTop: 8, background: 'rgba(196,130,66,0.1)', border: '1px solid rgba(196,130,66,0.3)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 8 }}>
               <span>💵</span>
               <div>
@@ -293,7 +297,7 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
               </div>
             </div>
           )}
-          {inadimplentes.length > 0 && (
+          {perfil !== 'monitor' && inadimplentes.length > 0 && (
             <div className="alert alert-danger" style={{ marginTop: 8 }}>
               <span>💸</span>
               <div><strong>{inadimplentes.length}</strong> cliente{inadimplentes.length > 1 ? 's' : ''} com pagamento atrasado.</div>
