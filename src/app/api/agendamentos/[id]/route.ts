@@ -48,6 +48,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
+// DELETE — remove registro (somente gestor)
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const user = await requireSession()
+    if (user.role !== 'gestor') {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+    // remove pagamentos vinculados primeiro (FK)
+    await query(`DELETE FROM pagamentos WHERE agendamento_id = $1`, [params.id])
+    const row = await queryOne(`DELETE FROM agendamentos WHERE id = $1 RETURNING id`, [params.id])
+    if (!row) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro interno'
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
 // GET — retorna agendamento com pagamentos
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   await requireSession()

@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import type { Agendamento } from '@/types'
+import type { Agendamento, Perfil } from '@/types'
 import { formatCurrency, formatDate, servicoLabel } from '@/lib/utils'
 import ModalAgendamento from '@/components/ModalAgendamento'
 
 interface Props {
   agendamentos: Agendamento[]
   pets: { id: string; nome: string; tutor_nome: string; porte: string | null }[]
+  perfil: Perfil
 }
 
 const servicoBadge: Record<string, string> = {
@@ -22,12 +23,13 @@ const PLANO_LABEL: Record<string, string> = {
 }
 const DIAS_LABEL: Record<string, string> = { seg:'Seg', ter:'Ter', qua:'Qua', qui:'Qui', sex:'Sex', sab:'Sáb' }
 
-export default function AgendamentosClient({ agendamentos, pets }: Props) {
+export default function AgendamentosClient({ agendamentos, pets, perfil }: Props) {
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [detalhe, setDetalhe] = useState<Agendamento | null>(null)
   const [cancelando, setCancelando] = useState<string | null>(null)
+  const [apagando, setApagando] = useState<string | null>(null)
   const [lista, setLista] = useState(agendamentos)
 
   // edição
@@ -77,6 +79,17 @@ export default function AgendamentosClient({ agendamentos, pets }: Props) {
       if (detalhe?.id === id) setDetalhe(prev => prev ? { ...prev, status: 'cancelado' as const } : null)
     }
     setCancelando(null)
+  }
+
+  async function apagar(id: string) {
+    if (!confirm('Apagar este agendamento definitivamente? Esta ação não pode ser desfeita.')) return
+    setApagando(id)
+    const res = await fetch(`/api/agendamentos/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setLista(prev => prev.filter(a => a.id !== id))
+      if (detalhe?.id === id) setDetalhe(null)
+    }
+    setApagando(null)
   }
 
   async function salvarEdicao() {
@@ -180,6 +193,13 @@ export default function AgendamentosClient({ agendamentos, pets }: Props) {
                         {cancelando === a.id ? '...' : 'Cancelar'}
                       </button>
                     )}
+                    {perfil === 'gestor' && (
+                      <button className="btn btn-sm btn-ghost" style={{ color: 'var(--vermelho)' }}
+                        disabled={apagando === a.id} onClick={() => apagar(a.id)}
+                        title="Apagar registro definitivamente">
+                        {apagando === a.id ? '...' : '🗑️'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -272,6 +292,13 @@ export default function AgendamentosClient({ agendamentos, pets }: Props) {
                 )}
 
                 <div className="modal-footer">
+                  {perfil === 'gestor' && (
+                    <button className="btn btn-ghost" style={{ color: 'var(--vermelho)' }}
+                      disabled={apagando === detalhe.id} onClick={() => apagar(detalhe.id)}
+                      title="Apagar registro definitivamente">
+                      {apagando === detalhe.id ? 'Apagando...' : '🗑️ Apagar'}
+                    </button>
+                  )}
                   {detalhe.status === 'agendado' && (
                     <button className="btn btn-ghost" style={{ color: 'var(--vermelho)' }}
                       disabled={cancelando === detalhe.id} onClick={() => cancelar(detalhe.id)}>
