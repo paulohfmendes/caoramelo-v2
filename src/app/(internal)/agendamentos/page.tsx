@@ -11,6 +11,7 @@ export default async function AgendamentosPage() {
     FROM agendamentos a
     JOIN pets p ON p.id = a.pet_id
     JOIN tutores t ON t.id = p.tutor_id
+    WHERE a.deleted_at IS NULL
     ORDER BY a.data_inicio DESC
     LIMIT 100
   `).catch(() => [])

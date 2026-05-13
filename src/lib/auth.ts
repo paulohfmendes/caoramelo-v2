@@ -2,21 +2,23 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import type { User } from '@/types'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET não está configurado. Defina esta variável de ambiente antes de iniciar.')
+function getSecret(): Uint8Array {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET não está configurado. Defina esta variável de ambiente antes de iniciar.')
+  }
+  return new TextEncoder().encode(process.env.JWT_SECRET)
 }
-const secret = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function signToken(user: User): Promise<string> {
   return new SignJWT({ id: user.id, name: user.name, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('8h')
-    .sign(secret)
+    .sign(getSecret())
 }
 
 export async function verifyToken(token: string): Promise<User | null> {
   try {
-    const { payload } = await jwtVerify(token, secret)
+    const { payload } = await jwtVerify(token, getSecret())
     return payload as unknown as User
   } catch {
     return null
