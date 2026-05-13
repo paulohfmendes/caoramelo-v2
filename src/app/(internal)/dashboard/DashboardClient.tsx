@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { Perfil } from '@/types'
 
 interface Inadimplente {
@@ -64,9 +65,9 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
         </div>
         {perfil !== 'monitor' && (
           <div className="page-actions">
-            <button className="btn btn-primary" onClick={() => window.location.href = '/agendamentos'}>
+            <Link href="/agendamentos" className="btn btn-primary">
               + Novo Agendamento
-            </button>
+            </Link>
           </div>
         )}
       </div>
@@ -107,7 +108,6 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
             borderRadius: 10,
             overflow: 'hidden',
           }}>
-            {/* Cabeçalho */}
             <div style={{
               padding: '14px 20px',
               borderBottom: '1px solid var(--border)',
@@ -146,7 +146,6 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
               </div>
             </div>
 
-            {/* Tabela */}
             <div style={{ overflowX: 'auto' }}>
               <table className="table" style={{ margin: 0 }}>
                 <thead>
@@ -284,13 +283,13 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>em aberto</div>
                   </div>
-                  <a
+                  <Link
                     href="/tutores"
                     className="btn btn-sm btn-ghost"
                     style={{ color: 'var(--vermelho)', borderColor: 'rgba(239,68,68,0.3)', whiteSpace: 'nowrap' }}
                   >
                     Ver tutor →
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
@@ -301,19 +300,19 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
       <div className="grid-2">
         <div className="card">
           <div className="card-title"><span className="card-title-icon">📅</span> Acesso Rápido</div>
-          <a href="/agendamentos" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
+          <Link href="/agendamentos" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
             📅 Agendamentos
-          </a>
-          <a href="/banho-tosa" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
+          </Link>
+          <Link href="/banho-tosa" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
             🛁 Banho e Tosa — Kanban
-          </a>
-          <a href="/transporte" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
+          </Link>
+          <Link href="/transporte" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8, justifyContent: 'flex-start' }}>
             🚗 Transporte
-          </a>
+          </Link>
           {perfil !== 'atendente' && (
-            <a href="/monitor" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start' }}>
+            <Link href="/monitor" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start' }}>
               🔍 Monitor — Checklists
-            </a>
+            </Link>
           )}
         </div>
 
@@ -345,9 +344,9 @@ export default function DashboardClient({ perfil, stats, inadimplentes, contasRe
             </div>
           )}
           {perfil === 'gestor' && (
-            <a href="/financeiro" className="btn btn-secondary" style={{ width: '100%', marginTop: 12, justifyContent: 'flex-start' }}>
+            <Link href="/financeiro" className="btn btn-secondary" style={{ width: '100%', marginTop: 12, justifyContent: 'flex-start' }}>
               💰 Ver Financeiro
-            </a>
+            </Link>
           )}
         </div>
       </div>

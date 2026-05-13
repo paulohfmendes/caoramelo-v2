@@ -1,8 +1,13 @@
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import type { Pagamento } from '@/types'
 import FinanceiroClient from './FinanceiroClient'
 
 export default async function FinanceiroPage() {
+  const user = await getSession()
+  if (!user || user.role !== 'gestor') redirect('/dashboard')
+
   const [pagamentos, stats] = await Promise.all([
     query<Pagamento>(`
       SELECT pg.*, p.nome as pet_nome, t.nome as tutor_nome, a.servico

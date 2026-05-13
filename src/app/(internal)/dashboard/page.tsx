@@ -43,6 +43,7 @@ export default async function DashboardPage() {
         AND (
           a.status = 'concluido'
           OR (a.data_vencimento IS NOT NULL AND a.data_vencimento < CURRENT_DATE)
+          OR (a.data_vencimento IS NULL AND a.data_inicio < CURRENT_DATE - INTERVAL '1 day')
         )
       GROUP BY t.id, t.nome, t.whatsapp
       ORDER BY valor_em_aberto DESC
