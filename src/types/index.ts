@@ -57,6 +57,7 @@ export interface Agendamento {
   destino?: string
   valor?: number
   data_vencimento?: string | null
+  dias_semana?: string | null
   observacoes?: string
   created_at: string
 }

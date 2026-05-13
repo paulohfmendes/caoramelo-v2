@@ -47,6 +47,7 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
   const [destino, setDestino] = useState('')
   const [valor, setValor] = useState('')
   const [dataVencimento, setDataVencimento] = useState('')
+  const [diasSemana, setDiasSemana] = useState<string[]>([])
   const [obs, setObs] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -133,6 +134,7 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
         origem, destino,
         valor: valor ? Number(valor) : null,
         data_vencimento: dataVencimento || null,
+        dias_semana: diasSemana.length ? diasSemana.join(',') : null,
         observacoes: obs,
       }),
     })
@@ -234,6 +236,37 @@ export default function ModalAgendamento({ pets, onClose, onSaved, somenteLeitur
               <label className="form-label">Data de início *</label>
               <input type="date" className="form-control" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
             </div>
+
+            {plano !== 'avulso' && (
+              <div className="form-group">
+                <label className="form-label">Dias da semana *</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                  {(['seg','ter','qua','qui','sex','sab'] as const).map(dia => {
+                    const labels: Record<string, string> = { seg:'Seg', ter:'Ter', qua:'Qua', qui:'Qui', sex:'Sex', sab:'Sáb' }
+                    const ativo = diasSemana.includes(dia)
+                    return (
+                      <button
+                        key={dia}
+                        type="button"
+                        onClick={() => setDiasSemana(prev => ativo ? prev.filter(d => d !== dia) : [...prev, dia])}
+                        style={{
+                          padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                          border: `2px solid ${ativo ? 'var(--caramelo)' : 'var(--border)'}`,
+                          background: ativo ? 'rgba(196,130,66,0.15)' : 'transparent',
+                          color: ativo ? 'var(--caramelo)' : 'var(--muted)',
+                          transition: 'all .15s',
+                        }}
+                      >
+                        {labels[dia]}
+                      </button>
+                    )
+                  })}
+                </div>
+                {diasSemana.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--vermelho)', marginTop: 4 }}>Selecione ao menos um dia</div>
+                )}
+              </div>
+            )}
           </>
         )}
 

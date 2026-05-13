@@ -20,7 +20,7 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   const [form, setForm] = useState({
     tutor_id: '', nome: '', raca: '', porte: 'medio', peso: '',
     sexo: 'macho', castrado: false, vacinas_ok: true,
-    medicamento: '', observacoes: '',
+    pelagem: '', nascimento: '', medicamento: '', observacoes: '',
   })
 
   // lista local de tutores — cresce quando um novo é criado inline
@@ -34,6 +34,16 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   const [ntSaving, setNtSaving] = useState(false)
   const [ntError, setNtError] = useState('')
 
+  // edição de pet
+  const [editando, setEditando] = useState(false)
+  const [editForm, setEditForm] = useState({
+    nome: '', raca: '', porte: 'medio', peso: '',
+    sexo: 'macho', castrado: false, vacinas_ok: true,
+    pelagem: '', nascimento: '', medicamento: '', observacoes: '',
+  })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+
   const lista = pets.filter(p =>
     busca === '' ||
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -42,6 +52,7 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   )
 
   function set(k: string, v: unknown) { setForm(f => ({ ...f, [k]: v })) }
+  function setE(k: string, v: unknown) { setEditForm(f => ({ ...f, [k]: v })) }
 
   function abrirNovoTutor() {
     setNtNome(''); setNtWpp(''); setNtEndereco(''); setNtError('')
@@ -51,6 +62,25 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
   function fecharNovoTutor() {
     setNovoTutorOpen(false)
     setNtNome(''); setNtWpp(''); setNtEndereco(''); setNtError('')
+  }
+
+  function iniciarEdicao() {
+    if (!detalhe) return
+    setEditForm({
+      nome: detalhe.nome,
+      raca: detalhe.raca,
+      porte: detalhe.porte ?? 'medio',
+      peso: detalhe.peso ? String(detalhe.peso) : '',
+      sexo: detalhe.sexo ?? 'macho',
+      castrado: detalhe.castrado,
+      vacinas_ok: detalhe.vacinas_ok,
+      pelagem: detalhe.pelagem ?? '',
+      nascimento: detalhe.nascimento ?? '',
+      medicamento: detalhe.medicamento ?? '',
+      observacoes: detalhe.observacoes ?? '',
+    })
+    setEditError('')
+    setEditando(true)
   }
 
   async function salvarTutor() {
@@ -69,11 +99,35 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
       return
     }
     const novo: { id: string; nome: string } = await res.json()
-    // adiciona na lista local e seleciona automaticamente
     setTutores(prev => [...prev, { id: novo.id, nome: novo.nome }].sort((a, b) => a.nome.localeCompare(b.nome)))
     setForm(f => ({ ...f, tutor_id: novo.id }))
     fecharNovoTutor()
     setNtSaving(false)
+  }
+
+  async function salvarEdicao() {
+    if (!detalhe) return
+    if (!editForm.nome || !editForm.raca) { setEditError('Nome e raça são obrigatórios'); return }
+    setEditSaving(true)
+    setEditError('')
+    const res = await fetch(`/api/pets/${detalhe.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...editForm,
+        peso: editForm.peso ? Number(editForm.peso) : null,
+        nascimento: editForm.nascimento || null,
+      }),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      setEditError(d.error ?? 'Erro ao salvar')
+      setEditSaving(false)
+      return
+    }
+    setEditSaving(false)
+    setEditando(false)
+    window.location.reload()
   }
 
   async function salvar() {
@@ -82,7 +136,11 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
     const res = await fetch('/api/pets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, peso: form.peso ? Number(form.peso) : null }),
+      body: JSON.stringify({
+        ...form,
+        peso: form.peso ? Number(form.peso) : null,
+        nascimento: form.nascimento || null,
+      }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
     window.location.reload()
@@ -133,13 +191,13 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
                 {p.sexo === 'femea' && !p.castrado && <span className="badge badge-cio">🌸 Fêmea não castrada</span>}
               </div>
             </div>
-            <button className="btn btn-sm btn-ghost" onClick={() => setDetalhe(p)}>Ver</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => { setDetalhe(p); setEditando(false) }}>Ver</button>
           </div>
         ))
       )}
 
       {/* Modal detalhe do pet */}
-      {detalhe && (
+      {detalhe && !editando && (
         <div className="modal-overlay open">
           <div className="modal" style={{ maxWidth: 520 }}>
             <div className="modal-header">
@@ -173,6 +231,91 @@ export default function PetsClient({ pets, tutores: tutoresInit }: Props) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setDetalhe(null)}>Fechar</button>
+              <button className="btn btn-secondary" onClick={iniciarEdicao}>✏️ Editar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal edição de pet */}
+      {detalhe && editando && (
+        <div className="modal-overlay open">
+          <div className="modal modal-lg">
+            <div className="modal-header">
+              <div className="modal-title">✏️ Editar {detalhe.nome}</div>
+              <button className="modal-close" onClick={() => setEditando(false)}>✕</button>
+            </div>
+            {editError && <div className="alert alert-danger"><span>⚠️</span>{editError}</div>}
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Nome do pet *</label>
+                <input type="text" className="form-control" value={editForm.nome} onChange={e => setE('nome', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Raça *</label>
+                <input type="text" className="form-control" value={editForm.raca} onChange={e => setE('raca', e.target.value)} />
+              </div>
+            </div>
+            <div className="form-row-3">
+              <div className="form-group">
+                <label className="form-label">Porte</label>
+                <select className="form-control" value={editForm.porte} onChange={e => setE('porte', e.target.value)}>
+                  <option value="pequeno">Pequeno</option>
+                  <option value="medio">Médio</option>
+                  <option value="grande">Grande</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Peso (kg)</label>
+                <input type="number" className="form-control" value={editForm.peso} onChange={e => setE('peso', e.target.value)} placeholder="0" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Sexo</label>
+                <select className="form-control" value={editForm.sexo} onChange={e => setE('sexo', e.target.value)}>
+                  <option value="macho">Macho</option>
+                  <option value="femea">Fêmea</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Castrado(a)</label>
+                <select className="form-control" value={editForm.castrado ? 'sim' : 'nao'} onChange={e => setE('castrado', e.target.value === 'sim')}>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Vacinas em dia</label>
+                <select className="form-control" value={editForm.vacinas_ok ? 'sim' : 'nao'} onChange={e => setE('vacinas_ok', e.target.value === 'sim')}>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Pelagem</label>
+                <input type="text" className="form-control" value={editForm.pelagem} onChange={e => setE('pelagem', e.target.value)} placeholder="Curta, longa, crespa..." />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nascimento</label>
+                <input type="date" className="form-control" value={editForm.nascimento} onChange={e => setE('nascimento', e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Medicamento</label>
+              <input type="text" className="form-control" value={editForm.medicamento} onChange={e => setE('medicamento', e.target.value)} placeholder="Nome, dose e horário (ou deixe vazio)" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Observações</label>
+              <textarea className="form-control" value={editForm.observacoes} onChange={e => setE('observacoes', e.target.value)} rows={3} placeholder="Comportamento, restrições, alergias..." />
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setEditando(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvarEdicao} disabled={editSaving}>
+                {editSaving ? 'Salvando...' : '💾 Salvar Alterações'}
+              </button>
             </div>
           </div>
         </div>

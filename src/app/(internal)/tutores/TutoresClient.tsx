@@ -35,6 +35,12 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
   const [detalhe, setDetalhe] = useState<TutorDetalhe | null>(null)
   const [loadingDetalhe, setLoadingDetalhe] = useState(false)
 
+  // edição
+  const [editando, setEditando] = useState(false)
+  const [editForm, setEditForm] = useState({ nome: '', whatsapp: '', endereco: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+
   const lista = tutores.filter(t => {
     const matchBusca = busca === '' ||
       t.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -51,9 +57,38 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
   async function verTutor(id: string) {
     setLoadingDetalhe(true)
     setDetalhe(null)
+    setEditando(false)
     const res = await fetch(`/api/tutores/${id}`)
     if (res.ok) setDetalhe(await res.json())
     setLoadingDetalhe(false)
+  }
+
+  function iniciarEdicao() {
+    if (!detalhe) return
+    setEditForm({ nome: detalhe.nome, whatsapp: detalhe.whatsapp, endereco: detalhe.endereco ?? '' })
+    setEditError('')
+    setEditando(true)
+  }
+
+  async function salvarEdicao() {
+    if (!detalhe) return
+    if (!editForm.nome || !editForm.whatsapp) { setEditError('Nome e WhatsApp são obrigatórios'); return }
+    setEditSaving(true)
+    setEditError('')
+    const res = await fetch(`/api/tutores/${detalhe.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      setEditError(d.error ?? 'Erro ao salvar')
+      setEditSaving(false)
+      return
+    }
+    setEditSaving(false)
+    setEditando(false)
+    window.location.reload()
   }
 
   async function salvar() {
@@ -154,12 +189,12 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
           <div className="modal" style={{ maxWidth: 560 }}>
             <div className="modal-header">
               <div className="modal-title">👤 {detalhe?.nome ?? '...'}</div>
-              <button className="modal-close" onClick={() => setDetalhe(null)}>✕</button>
+              <button className="modal-close" onClick={() => { setDetalhe(null); setEditando(false) }}>✕</button>
             </div>
 
             {loadingDetalhe && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)' }}>Carregando...</div>}
 
-            {detalhe && (
+            {detalhe && !editando && (
               <>
                 <div style={{ padding: '0 0 16px' }}>
                   <div style={{ display: 'grid', gap: 6 }}>
@@ -205,7 +240,32 @@ export default function TutoresClient({ tutores }: { tutores: TutorRow[] }) {
                 </div>
 
                 <div className="modal-footer">
-                  <button className="btn btn-ghost" onClick={() => setDetalhe(null)}>Fechar</button>
+                  <button className="btn btn-ghost" onClick={() => { setDetalhe(null); setEditando(false) }}>Fechar</button>
+                  <button className="btn btn-secondary" onClick={iniciarEdicao}>✏️ Editar</button>
+                </div>
+              </>
+            )}
+
+            {detalhe && editando && (
+              <>
+                {editError && <div className="alert alert-danger" style={{ marginBottom: 14 }}><span>⚠️</span>{editError}</div>}
+                <div className="form-group">
+                  <label className="form-label">Nome completo *</label>
+                  <input type="text" className="form-control" value={editForm.nome} onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">WhatsApp *</label>
+                  <input type="text" className="form-control" value={editForm.whatsapp} onChange={e => setEditForm(f => ({ ...f, whatsapp: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Endereço</label>
+                  <input type="text" className="form-control" value={editForm.endereco} onChange={e => setEditForm(f => ({ ...f, endereco: e.target.value }))} placeholder="Rua, número, bairro" />
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-ghost" onClick={() => setEditando(false)}>Cancelar</button>
+                  <button className="btn btn-primary" onClick={salvarEdicao} disabled={editSaving}>
+                    {editSaving ? 'Salvando...' : '💾 Salvar'}
+                  </button>
                 </div>
               </>
             )}
