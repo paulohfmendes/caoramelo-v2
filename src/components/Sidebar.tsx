@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import type { Perfil } from '@/types'
@@ -36,13 +37,20 @@ export default function Sidebar({ perfil, onClose, isOpen }: SidebarProps) {
 
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-      <div className="sidebar-logo">
-        <div className="logo-paw">🐾</div>
+      <Link href="/dashboard" onClick={handleNav} className="sidebar-logo" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+        <Image
+          src="/logo.png"
+          alt="Cãoramelo"
+          width={52}
+          height={52}
+          style={{ objectFit: 'contain', flexShrink: 0 }}
+          priority
+        />
         <div>
           <div className="logo-mark">Cãoramelo</div>
           <div className="logo-sub">Sistema de Gestão</div>
         </div>
-      </div>
+      </Link>
 
       <div className="perfil-area">
         <div className="perfil-label">Perfil ativo</div>

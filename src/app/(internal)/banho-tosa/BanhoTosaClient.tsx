@@ -27,7 +27,7 @@ const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio
 function wppLink(whatsapp: string, petNome: string, tutorNome: string) {
   const numero = whatsapp.replace(/\D/g, '')
   const msg = encodeURIComponent(
-    `Olá ${tutorNome}! 🐾 O *${petNome}* já está pronto para retirada! Pode vir buscá-lo. 🛁✅\n\n_Equipe Cãoramelo_`
+    `Olá ${tutorNome}, seu Pet está pronto, e já pode ser retirado.\nRecomendamos retirá-lo em até 30 min, para evitar stress e tumultos.\n\nObrigado!\nEquipe Cãoramelo`
   )
   return `https://wa.me/55${numero}?text=${msg}`
 }
