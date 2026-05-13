@@ -2,9 +2,10 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import type { User } from '@/types'
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'fallback-secret-32-chars-minimum!!'
-)
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET não está configurado. Defina esta variável de ambiente antes de iniciar.')
+}
+const secret = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function signToken(user: User): Promise<string> {
   return new SignJWT({ id: user.id, name: user.name, role: user.role })

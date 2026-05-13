@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Agendamento } from '@/types'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import ModalAgendamento from '@/components/ModalAgendamento'
@@ -16,6 +17,7 @@ const statusDot: Record<string, string> = {
 }
 
 export default function TransporteClient({ agendamentos, pets, podeAgendar }: Props) {
+  const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
   const [busca, setBusca] = useState('')
   const [detalhe, setDetalhe] = useState<Agendamento | null>(null)
@@ -171,7 +173,7 @@ export default function TransporteClient({ agendamentos, pets, podeAgendar }: Pr
         <ModalAgendamento
           pets={pets}
           onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); window.location.reload() }}
+          onSaved={() => { setModalOpen(false); router.refresh() }}
         />
       )}
     </>

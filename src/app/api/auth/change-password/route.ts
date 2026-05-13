@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { queryOne, query } from '@/lib/db'
 import { requireSession } from '@/lib/auth'
+import { ChangePasswordSchema, parseBody } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   const user = await requireSession()
-  const { role_alvo, senha_atual, nova_senha } = await req.json()
 
-  if (!nova_senha || nova_senha.length < 4) {
-    return NextResponse.json({ error: 'Nova senha deve ter ao menos 4 caracteres' }, { status: 400 })
+  const body = await req.json().catch(() => null)
+  const parsed = parseBody(ChangePasswordSchema, body)
+  if ('error' in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status })
   }
+
+  const { role_alvo, senha_atual, nova_senha } = parsed.data
 
   // Gestor pode trocar senha de qualquer perfil sem precisar da senha atual
   if (role_alvo && role_alvo !== user.role) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Agendamento, Perfil } from '@/types'
 import { formatCurrency, formatDate, servicoLabel } from '@/lib/utils'
 import ModalAgendamento from '@/components/ModalAgendamento'
@@ -24,6 +25,7 @@ const PLANO_LABEL: Record<string, string> = {
 const DIAS_LABEL: Record<string, string> = { seg:'Seg', ter:'Ter', qua:'Qua', qui:'Qui', sex:'Sex', sab:'Sáb' }
 
 export default function AgendamentosClient({ agendamentos, pets, perfil }: Props) {
+  const router = useRouter()
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -353,7 +355,7 @@ export default function AgendamentosClient({ agendamentos, pets, perfil }: Props
 
       {modalOpen && (
         <ModalAgendamento pets={pets} onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); window.location.reload() }} />
+          onSaved={() => { setModalOpen(false); router.refresh() }} />
       )}
     </>
   )

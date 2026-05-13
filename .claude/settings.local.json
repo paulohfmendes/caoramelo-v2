@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf \"C:/Users/paulo.mendes/OneDrive - Ernesto Borges Advogados/Documentos/Paulo Mendes/Sites e Programas/caoramelo-v2/.clone\" && echo \"Removido\")",
+      "Bash(npm run *)",
+      "Bash(npm --version)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

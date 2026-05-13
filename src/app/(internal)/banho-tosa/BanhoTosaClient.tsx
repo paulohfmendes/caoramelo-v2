@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Agendamento, BanhoStatus } from '@/types'
 import ModalAgendamento from '@/components/ModalAgendamento'
 
@@ -33,6 +34,7 @@ function wppLink(whatsapp: string, petNome: string, tutorNome: string) {
 }
 
 export default function BanhoTosaClient({ agendamentos, pets }: Props) {
+  const router = useRouter()
   const [items, setItems] = useState(agendamentos)
   const [modalOpen, setModalOpen] = useState(false)
   const [movendo, setMovendo] = useState<string | null>(null)
@@ -46,14 +48,6 @@ export default function BanhoTosaClient({ agendamentos, pets }: Props) {
     })
     setItems(prev => prev.map(a => a.id === id ? { ...a, banho_status: novoStatus } : a))
     setMovendo(null)
-  }
-
-  // normaliza status antigos (em_banho → em_atendimento, em_tosa → em_atendimento, retirado → pronto)
-  function statusNormalizado(a: BanhoCard): BanhoStatus {
-    const s = (a.banho_status ?? 'agendado') as string
-    if (s === 'em_banho' || s === 'em_tosa') return 'em_atendimento'
-    if (s === 'retirado') return 'pronto'
-    return s as BanhoStatus
   }
 
   return (
@@ -70,7 +64,7 @@ export default function BanhoTosaClient({ agendamentos, pets }: Props) {
 
       <div className="kanban">
         {COLUNAS.map(col => {
-          const cards = items.filter(a => statusNormalizado(a) === col.key)
+          const cards = items.filter(a => (a.banho_status ?? 'agendado') === col.key)
           return (
             <div key={col.key} className="kanban-col" style={{ background: col.cor }}>
               <div className="kanban-col-header">
@@ -143,7 +137,7 @@ export default function BanhoTosaClient({ agendamentos, pets }: Props) {
         <ModalAgendamento
           pets={pets}
           onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); window.location.reload() }}
+          onSaved={() => { setModalOpen(false); router.refresh() }}
         />
       )}
     </>

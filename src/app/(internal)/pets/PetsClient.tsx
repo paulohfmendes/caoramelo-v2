@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Pet, Perfil } from '@/types'
 
 interface Props {
@@ -13,6 +14,7 @@ const PORTE_LABEL: Record<string, string> = { pequeno: 'Pequeno', medio: 'Médio
 const SEXO_LABEL: Record<string, string> = { macho: 'Macho', femea: 'Fêmea' }
 
 export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props) {
+  const router = useRouter()
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [detalhe, setDetalhe] = useState<Pet | null>(null)
@@ -114,7 +116,7 @@ export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props
     const res = await fetch(`/api/pets/${detalhe.id}`, { method: 'DELETE' })
     if (res.ok) {
       setDetalhe(null)
-      window.location.reload()
+      router.refresh()
     }
     setApagandoPet(false)
   }
@@ -141,7 +143,7 @@ export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props
     }
     setEditSaving(false)
     setEditando(false)
-    window.location.reload()
+    router.refresh()
   }
 
   async function salvar() {
@@ -157,7 +159,7 @@ export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props
       }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
-    window.location.reload()
+    router.refresh()
   }
 
   return (
@@ -213,7 +215,7 @@ export default function PetsClient({ pets, tutores: tutoresInit, perfil }: Props
                   onClick={async () => {
                     if (!confirm(`Apagar pet "${p.nome}" e todos os seus agendamentos?`)) return
                     await fetch(`/api/pets/${p.id}`, { method: 'DELETE' })
-                    window.location.reload()
+                    router.refresh()
                   }}>
                   🗑️
                 </button>
