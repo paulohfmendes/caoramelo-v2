@@ -8,17 +8,17 @@ import ModalTrocarSenha from './ModalTrocarSenha'
 
 interface SidebarProps {
   perfil: Perfil
-  onPerfilChange: (p: Perfil) => void
+  onClose: () => void
   isOpen?: boolean
 }
 
 const perfilNome: Record<Perfil, string> = {
-  atendente: 'Atendente',
-  monitor: 'Monitor',
-  gestor: 'Gestor',
+  atendente: '👩‍💼 Atendente',
+  monitor: '🔍 Monitor',
+  gestor: '📊 Gestor / Sócio',
 }
 
-export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps) {
+export default function Sidebar({ perfil, onClose, isOpen }: SidebarProps) {
   const path = usePathname()
   const router = useRouter()
   const nav = (href: string) => path === href ? 'nav-item active' : 'nav-item'
@@ -28,6 +28,10 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
     router.refresh()
+  }
+
+  function handleNav() {
+    onClose()
   }
 
   return (
@@ -42,18 +46,7 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
 
       <div className="perfil-area">
         <div className="perfil-label">Perfil ativo</div>
-        {perfil === 'gestor' ? (
-          <select
-            className="form-control"
-            value={perfil}
-            onChange={e => onPerfilChange(e.target.value as Perfil)}
-          >
-            <option value="atendente">👩‍💼 Atendente / Recepção</option>
-            <option value="monitor">🔍 Monitor</option>
-            <option value="gestor">📊 Gestor / Sócio</option>
-          </select>
-        ) : null}
-        <div className="perfil-badge" style={{ marginTop: perfil === 'gestor' ? 8 : 0 }}>
+        <div className="perfil-badge">
           <div className="perfil-badge-dot" />
           <div className="perfil-badge-nome">{perfilNome[perfil]}</div>
         </div>
@@ -61,21 +54,21 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
 
       <div className="nav-section">
         <div className="nav-section-label">Operação</div>
-        <Link href="/dashboard" className={nav('/dashboard')}>
+        <Link href="/dashboard" className={nav('/dashboard')} onClick={handleNav}>
           <span className="nav-icon">📊</span> Dashboard
         </Link>
-        <Link href="/agendamentos" className={nav('/agendamentos')}>
+        <Link href="/agendamentos" className={nav('/agendamentos')} onClick={handleNav}>
           <span className="nav-icon">📅</span> Agendamentos
         </Link>
-        <Link href="/banho-tosa" className={nav('/banho-tosa')}>
+        <Link href="/banho-tosa" className={nav('/banho-tosa')} onClick={handleNav}>
           <span className="nav-icon">🛁</span> Banho e Tosa
         </Link>
         {perfil !== 'atendente' && (
-          <Link href="/monitor" className={nav('/monitor')}>
+          <Link href="/monitor" className={nav('/monitor')} onClick={handleNav}>
             <span className="nav-icon">🔍</span> Monitor
           </Link>
         )}
-        <Link href="/transporte" className={nav('/transporte')}>
+        <Link href="/transporte" className={nav('/transporte')} onClick={handleNav}>
           <span className="nav-icon">🚗</span> Transporte
         </Link>
       </div>
@@ -84,13 +77,13 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
 
       <div className="nav-section">
         <div className="nav-section-label">Cadastros</div>
-        <Link href="/tutores" className={nav('/tutores')}>
+        <Link href="/tutores" className={nav('/tutores')} onClick={handleNav}>
           <span className="nav-icon">👥</span> Tutores
         </Link>
-        <Link href="/pets" className={nav('/pets')}>
+        <Link href="/pets" className={nav('/pets')} onClick={handleNav}>
           <span className="nav-icon">🐶</span> Pets
         </Link>
-        <Link href="/servicos" className={nav('/servicos')}>
+        <Link href="/servicos" className={nav('/servicos')} onClick={handleNav}>
           <span className="nav-icon">💰</span> Tabela de Serviços
         </Link>
       </div>
@@ -100,10 +93,10 @@ export default function Sidebar({ perfil, onPerfilChange, isOpen }: SidebarProps
           <div className="nav-divider" />
           <div className="nav-section">
             <div className="nav-section-label">Gestão</div>
-            <Link href="/financeiro" className={nav('/financeiro')}>
+            <Link href="/financeiro" className={nav('/financeiro')} onClick={handleNav}>
               <span className="nav-icon">💰</span> Financeiro
             </Link>
-            <Link href="/relatorios" className={nav('/relatorios')}>
+            <Link href="/relatorios" className={nav('/relatorios')} onClick={handleNav}>
               <span className="nav-icon">📈</span> Relatórios
             </Link>
           </div>

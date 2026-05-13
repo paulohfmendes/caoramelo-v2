@@ -1,5 +1,7 @@
 import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 import { query } from '@/lib/db'
 import type { Pagamento } from '@/types'
 import FinanceiroClient from './FinanceiroClient'

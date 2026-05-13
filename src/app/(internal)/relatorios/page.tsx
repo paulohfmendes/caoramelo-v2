@@ -1,4 +1,13 @@
-export default function RelatoriosPage() {
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
+
+export default async function RelatoriosPage() {
+  const user = await getSession()
+  if (!user || user.role !== 'gestor') redirect('/dashboard')
+
   return (
     <>
       <div className="page-header">
@@ -9,22 +18,22 @@ export default function RelatoriosPage() {
       </div>
 
       <div className="grid-2">
-        <a href="/agendamentos" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+        <Link href="/agendamentos" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
           <div className="card-title">📅 Agenda do Dia</div>
           <p style={{ fontSize: 13, color: 'var(--grafite-200)' }}>Todos os agendamentos por serviço para hoje</p>
-        </a>
-        <a href="/banho-tosa" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+        </Link>
+        <Link href="/banho-tosa" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
           <div className="card-title">🛁 Banho e Tosa</div>
           <p style={{ fontSize: 13, color: 'var(--grafite-200)' }}>Quadro Kanban do dia</p>
-        </a>
-        <a href="/financeiro" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+        </Link>
+        <Link href="/financeiro" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
           <div className="card-title">💰 Financeiro Geral</div>
           <p style={{ fontSize: 13, color: 'var(--grafite-200)' }}>Receita por dia, semana e mês</p>
-        </a>
-        <a href="/transporte" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+        </Link>
+        <Link href="/transporte" className="card" style={{ cursor: 'pointer', textDecoration: 'none' }}>
           <div className="card-title">🚗 Transportes</div>
           <p style={{ fontSize: 13, color: 'var(--grafite-200)' }}>Agenda completa de transporte de pets</p>
-        </a>
+        </Link>
       </div>
     </>
   )
