@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import Sidebar from './Sidebar'
 import type { Perfil } from '@/types'
 
@@ -18,7 +20,9 @@ export default function AppShell({ children, role }: { children: React.ReactNode
         <button className="hamburger" onClick={() => setSidebarOpen(o => !o)}>
           <span /><span /><span />
         </button>
-        <div className="topbar-logo">🐾 Cãoramelo</div>
+        <Link href="/dashboard" className="topbar-logo" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Image src="/logo.png" alt="Cãoramelo" height={36} width={36} style={{ objectFit: 'contain' }} priority />
+        </Link>
         <div style={{ fontSize: 11, color: 'var(--grafite-200)' }}>{role}</div>
       </nav>
 
