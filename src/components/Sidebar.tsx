@@ -39,12 +39,13 @@ export default function Sidebar({ perfil, onClose, isOpen }: SidebarProps) {
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <Link href="/dashboard" onClick={handleNav} className="sidebar-logo" style={{ textDecoration: 'none', cursor: 'pointer' }}>
         <Image
-          src="/logo.png"
+          src="/logo.svg"
           alt="Cãoramelo"
           width={52}
           height={52}
           style={{ objectFit: 'contain', flexShrink: 0 }}
           priority
+          unoptimized
         />
         <div>
           <div className="logo-mark">Cãoramelo</div>
